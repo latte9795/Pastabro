@@ -256,6 +256,7 @@
           <input type="number" class="fi" id="tA" placeholder="직접 입력" inputmode="numeric" />
         </div>
         <div class="fg"><label class="fl">메모</label><input type="text" class="fi" id="tM" placeholder="파스타 2인분 등" /></div>
+        <div class="fg"><label class="fl">날짜 (비워두면 현재 시간)</label><input type="datetime-local" class="fi" id="tD" /></div>
         <div class="fg">
           <label class="fl">손님 서명 (선택)</label>
           <div class="sgw"><canvas class="sgc" id="sgC"></canvas><span class="sgp" id="sgP">여기에 서명하세요</span><button class="sgx" id="sgX">지우기</button></div>
@@ -264,7 +265,7 @@
       </div>
       <div class="hh">📋 거래 내역</div>
       <div id="dH"></div>
-      <button class="bd" id="delC">이 손님 삭제</button>
+      <button class="bd" id="delC" style="display:none;font-size:11px;margin-top:32px;opacity:0.5">이 손님 삭제</button>
     </div>
   </div>
 </div>
@@ -280,12 +281,13 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
 const FC={apiKey:"AIzaSyArHG7EbxhV5cIIixOcY9y162svZXx7ffA",authDomain:"pastabro-4e5b0.firebaseapp.com",projectId:"pastabro-4e5b0",storageBucket:"pastabro-4e5b0.firebasestorage.app",messagingSenderId:"614383037631",appId:"1:614383037631:web:7ec4593968f5832cb3aa0a"};
-const DE=["kju80259795@gmail.com"];
+const ADMINS=["kju80259795@gmail.com","wjdska88888@gmail.com"];
+const DE=[...ADMINS];
 
 firebase.initializeApp(FC);
 const au=firebase.auth(),db=firebase.firestore(),gP=new firebase.auth.GoogleAuthProvider();
 const $=id=>document.getElementById(id);
-let cId=null,cTy=null,al=[...DE],allC=[];
+let cId=null,cTy=null,al=[...DE],allC=[],isAdmin=false;
 
 // Auth
 $("gBtn").addEventListener("click",()=>{au.signInWithPopup(gP).catch(e=>{$("lErr").textContent="로그인 실패: "+e.message;$("lErr").style.display="block"})});
@@ -294,10 +296,13 @@ au.onAuthStateChanged(u=>{
   if(!u){$("LS").style.display="flex";$("AP").style.display="none";return}
   db.collection("settings").doc("allowed_emails").get().then(d=>{
     if(d.exists&&d.data().list)al=d.data().list;
-    if(!al.includes(u.email)){$("lErr").textContent="접근 권한 없음 ("+u.email+")";$("lErr").style.display="block";au.signOut();return}
+    if(!al.includes(u.email)){$("lErr").textContent="접근 권한이 없습니다 ("+u.email+")";$("lErr").style.display="block";au.signOut();return}
+    isAdmin=ADMINS.includes(u.email);
     $("LS").style.display="none";$("AP").style.display="block";
     $("uN").textContent=u.displayName||u.email;
-    loadC();loadE();
+    // 관리자만 설정 탭 보이게
+    document.querySelector('[data-t="set"]').style.display=isAdmin?"block":"none";
+    loadC();if(isAdmin)loadE();
   });
 });
 
@@ -350,6 +355,7 @@ $("aS").addEventListener("click",()=>{
 // Detail
 function openD(id){
   cId=id;$("dOv").classList.add("show");$("tB").classList.remove("show");
+  $("delC").style.display=isAdmin?"block":"none";
   db.collection("customers").doc(id).get().then(d=>{
     const c=d.data();$("dN").textContent=c.name;$("dP").textContent=c.phone||"";$("dM").textContent=c.memo||"";
     const b=c.balance||0;$("dB").textContent="₩"+b.toLocaleString();
@@ -363,19 +369,21 @@ $("dOv").addEventListener("click",e=>{if(e.target===$("dOv"))closeD()});
 
 $("bD").addEventListener("click",()=>openTx("deposit"));
 $("bU").addEventListener("click",()=>openTx("withdraw"));
-function openTx(t){cTy=t;$("tT").textContent=t==="deposit"?"＋ 충전":"－ 사용";$("tB").classList.add("show");$("tA").value="";$("tM").value="";clrSig()}
+function openTx(t){cTy=t;$("tT").textContent=t==="deposit"?"＋ 충전":"－ 사용";$("tB").classList.add("show");$("tA").value="";$("tM").value="";$("tD").value="";clrSig()}
 
 document.querySelectorAll(".aqb").forEach(b=>{b.addEventListener("click",()=>$("tA").value=b.dataset.v)});
 
 $("tS").addEventListener("click",()=>{
   const amt=parseInt($("tA").value);if(!amt||amt<=0){toast("금액을 입력하세요");return}
   const sig=getSig(),memo=$("tM").value.trim(),delta=cTy==="deposit"?amt:-amt;
+  const customDate=$("tD").value;
+  const ts=customDate?firebase.firestore.Timestamp.fromDate(new Date(customDate)):firebase.firestore.FieldValue.serverTimestamp();
   const ref=db.collection("customers").doc(cId);
   db.runTransaction(tx=>{
     return tx.get(ref).then(doc=>{
       const nb=(doc.data().balance||0)+delta;
       tx.update(ref,{balance:nb});
-      tx.set(ref.collection("transactions").doc(),{type:cTy,amount:amt,delta,memo,signature:sig||null,balanceAfter:nb,createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:au.currentUser.email});
+      tx.set(ref.collection("transactions").doc(),{type:cTy,amount:amt,delta,memo,signature:sig||null,balanceAfter:nb,createdAt:ts,createdBy:au.currentUser.email});
     });
   }).then(()=>{toast(cTy==="deposit"?"충전 완료 ✓":"사용 처리 완료 ✓");$("tB").classList.remove("show");openD(cId)});
 });
@@ -393,7 +401,20 @@ function loadH(id){
   });
 }
 
-$("delC").addEventListener("click",()=>{if(!confirm("정말 삭제?\n모든 거래 내역이 삭제됩니다."))return;db.collection("customers").doc(cId).delete().then(()=>{toast("삭제 완료");closeD()})});
+$("delC").addEventListener("click",()=>{
+  const name=$("dN").textContent;
+  const typed=prompt("정말 삭제하려면 손님 이름을 정확히 입력하세요:\n\n"+name);
+  if(typed!==name){toast("이름이 일치하지 않습니다");return}
+  // 백업 후 삭제
+  const ref=db.collection("customers").doc(cId);
+  ref.get().then(doc=>{
+    const data=doc.data();
+    return ref.collection("transactions").orderBy("createdAt","desc").get().then(snap=>{
+      const txs=[];snap.forEach(d=>txs.push(d.data()));
+      return db.collection("deleted_customers").add({...data,transactions:txs,deletedAt:firebase.firestore.FieldValue.serverTimestamp(),deletedBy:au.currentUser.email});
+    });
+  }).then(()=>ref.delete()).then(()=>{toast("삭제 완료 (백업 저장됨)");closeD()});
+});
 
 // Signature
 const cv=$("sgC"),cx=cv.getContext("2d");let dr=false,hs=false;
