@@ -286,12 +286,20 @@ const DE=[...ADMINS];
 
 firebase.initializeApp(FC);
 const au=firebase.auth(),db=firebase.firestore(),gP=new firebase.auth.GoogleAuthProvider();
+gP.addScope('email');
+gP.addScope('profile');
 const $=id=>document.getElementById(id);
 let cId=null,cTy=null,al=[...DE],allC=[],isAdmin=false;
 
+// 이메일 가져오기 (fallback 포함)
+function getEmail(u){
+  if(u.email)return u.email;
+  if(u.providerData&&u.providerData.length>0&&u.providerData[0].email)return u.providerData[0].email;
+  return null;
+}
+
 // Auth
 $("gBtn").addEventListener("click",()=>{
-  // 인앱 브라우저 감지 (카카오, 인스타 등)
   const ua=navigator.userAgent||"";
   const inApp=/KAKAOTALK|Instagram|FBAN|FBAV|NAVER|Line/i.test(ua);
   if(inApp){$("lErr").textContent="카카오/인스타 브라우저에서는 로그인이 안 됩니다. 오른쪽 ⋯ 메뉴에서 '크롬에서 열기'를 눌러주세요.";$("lErr").style.display="block";return}
@@ -300,13 +308,14 @@ $("gBtn").addEventListener("click",()=>{
 $("loBtn").addEventListener("click",()=>au.signOut());
 au.onAuthStateChanged(u=>{
   if(!u){$("LS").style.display="flex";$("AP").style.display="none";return}
-  isAdmin=ADMINS.includes(u.email);
+  const email=getEmail(u);
+  if(!email){$("lErr").textContent="이메일 정보를 가져올 수 없습니다. 다시 로그인해주세요.";$("lErr").style.display="block";au.signOut();return}
+  isAdmin=ADMINS.includes(email);
   db.collection("settings").doc("allowed_emails").get().then(d=>{
     if(d.exists&&d.data().list)al=d.data().list;
-    // 관리자는 무조건 허용, 일반 직원은 목록 확인
-    if(!isAdmin&&!al.includes(u.email)){$("lErr").textContent="접근 권한이 없습니다 ("+u.email+")";$("lErr").style.display="block";au.signOut();return}
+    if(!isAdmin&&!al.includes(email)){$("lErr").textContent="접근 권한이 없습니다 ("+email+")";$("lErr").style.display="block";au.signOut();return}
     $("LS").style.display="none";$("AP").style.display="block";
-    $("uN").textContent=u.displayName||u.email;
+    $("uN").textContent=u.displayName||email;
     document.querySelector('[data-t="set"]').style.display=isAdmin?"block":"none";
     loadC();if(isAdmin)loadE();
   });
