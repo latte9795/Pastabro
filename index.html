@@ -290,7 +290,8 @@ const $=id=>document.getElementById(id);
 let cId=null,cTy=null,al=[...DE],allC=[],isAdmin=false;
 
 // Auth
-$("gBtn").addEventListener("click",()=>{au.signInWithPopup(gP).catch(e=>{$("lErr").textContent="로그인 실패: "+e.message;$("lErr").style.display="block"})});
+$("gBtn").addEventListener("click",()=>{au.signInWithRedirect(gP)});
+au.getRedirectResult().catch(e=>{if(e.code){$("lErr").textContent="로그인 실패: "+e.message;$("lErr").style.display="block"}});
 $("loBtn").addEventListener("click",()=>au.signOut());
 au.onAuthStateChanged(u=>{
   if(!u){$("LS").style.display="flex";$("AP").style.display="none";return}
