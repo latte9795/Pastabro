@@ -300,13 +300,13 @@ $("gBtn").addEventListener("click",()=>{
 $("loBtn").addEventListener("click",()=>au.signOut());
 au.onAuthStateChanged(u=>{
   if(!u){$("LS").style.display="flex";$("AP").style.display="none";return}
+  isAdmin=ADMINS.includes(u.email);
   db.collection("settings").doc("allowed_emails").get().then(d=>{
     if(d.exists&&d.data().list)al=d.data().list;
-    if(!al.includes(u.email)){$("lErr").textContent="접근 권한이 없습니다 ("+u.email+")";$("lErr").style.display="block";au.signOut();return}
-    isAdmin=ADMINS.includes(u.email);
+    // 관리자는 무조건 허용, 일반 직원은 목록 확인
+    if(!isAdmin&&!al.includes(u.email)){$("lErr").textContent="접근 권한이 없습니다 ("+u.email+")";$("lErr").style.display="block";au.signOut();return}
     $("LS").style.display="none";$("AP").style.display="block";
     $("uN").textContent=u.displayName||u.email;
-    // 관리자만 설정 탭 보이게
     document.querySelector('[data-t="set"]').style.display=isAdmin?"block":"none";
     loadC();if(isAdmin)loadE();
   });
