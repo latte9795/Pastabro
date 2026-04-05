@@ -2,712 +2,425 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="manifest" href="/ko/manifest.json">
-<meta name="theme-color" content="#4f46e5">
-<meta name="mobile-web-app-capable" content="yes">
-
-  <title>손님 장부 검색</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pastabro 선결제</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a1a1a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      --bg:#f5f4f0;--card:#fff;--text:#1a1a1a;--sub:#5c5c5c;--muted:#a0a0a0;
+      --accent:#1a1a1a;--border:#e8e6e1;--blight:#f0eeea;
+      --green:#1a6b3c;--gl:#e8f5ee;--red:#8b2020;--rl:#fdf0f0;
+      --warm:#f9f8f5;
+      --serif:'Cormorant Garamond',Georgia,serif;
+      --sans:'Noto Sans KR',-apple-system,sans-serif;
+      --R:16px;
     }
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-      background: #f3f4f6;
-      min-height: 100vh;
-    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:var(--sans);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 
-    .app {
-      background: #ffffff;
-      width: 100%;
-      max-width: 520px;
-      margin: 0 auto;
-      padding: 16px 14px 10px;
-      border-radius: 0;
-      box-shadow: none;
-    }
+    /* ── LOGIN ── */
+    #LS{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999}
+    .li{text-align:center;padding:24px}
+    .ll{font-family:var(--serif);font-weight:300;margin-bottom:48px}
+    .ll .lm{font-size:48px;letter-spacing:.01em;line-height:1}
+    .ll .ln{width:40px;height:1px;background:var(--muted);margin:16px auto}
+    .ll .ls{font-size:12px;letter-spacing:.25em;color:var(--sub);font-weight:400}
+    .lb{font-size:13px;color:var(--sub);margin-bottom:20px;letter-spacing:.05em}
+    .gb{display:inline-flex;align-items:center;gap:10px;padding:14px 36px;background:var(--card);border:1px solid var(--border);border-radius:999px;font-family:var(--sans);font-size:14px;font-weight:500;color:var(--text);cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+    .gb:hover{box-shadow:0 4px 24px rgba(0,0,0,.06);transform:translateY(-1px)}
+    .gb:active{transform:translateY(0)}
+    .gb svg{width:18px;height:18px}
+    .le{display:none;margin-top:18px;font-size:13px;color:var(--red);background:var(--rl);padding:10px 18px;border-radius:12px}
+    .la{position:fixed;bottom:24px;font-family:var(--serif);font-size:11px;letter-spacing:.12em;color:var(--muted)}
 
-    .app-inner {
-      margin-top: 10px;
-    }
+    /* ── APP ── */
+    #AP{display:none;height:100%}
+    .shell{max-width:520px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative}
 
-    .app-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .icon-badge {
-      width: 40px;
-      height: 40px;
-      border-radius: 14px;
-      background: #eef3ff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-    }
-    .app-title {
-      font-size: 19px;
-      font-weight: 700;
-      color: #111827;
-    }
-    .app-subtitle {
-      font-size: 11px;
-      color: #6b7280;
-      margin-top: 2px;
-    }
+    .hdr{background:var(--card);padding:14px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+    .ht{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .hb{font-family:var(--serif);font-size:20px;font-weight:400;letter-spacing:.02em}
+    .hr{display:flex;align-items:center;gap:8px}
+    .hn{font-size:11px;color:var(--sub)}
+    .ho{font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:3px 10px;border-radius:999px;cursor:pointer;font-family:var(--sans)}
 
-    .search-box-wrapper {
-      position: relative;
-      margin-bottom: 10px;
-      margin-top: 8px;
-    }
-    .search-label {
-      font-size: 11px;
-      color: #6b7280;
-      margin-bottom: 4px;
-    }
-    .search-input {
-      width: 100%;
-      padding: 11px 40px 11px 38px;
-      font-size: 16px; 
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      outline: none;
-      background-color: #f9fafb;
-      transition: all 0.15s ease;
-    }
-    .search-input:focus {
-      border-color: #4f46e5;
-      background-color: #ffffff;
-      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-    }
-    .search-icon {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 17px;
-      color: #9ca3af;
-      pointer-events: none;
-    }
-    .clear-btn {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: none;
-      background: #e5e7eb;
-      color: #374151;
-      cursor: pointer;
-      display: none;
-    }
-    .clear-btn.show {
-      display: inline-block;
-    }
+    .sw{position:relative}
+    .si{width:100%;padding:10px 14px 10px 36px;font-size:15px;border-radius:999px;border:1px solid var(--border);outline:none;background:var(--bg);font-family:var(--sans);transition:all .15s}
+    .si:focus{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 3px rgba(26,26,26,.06)}
+    .sic{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none}
 
-    .summary-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      color: #6b7280;
-      margin-bottom: 6px;
-      gap: 6px;
-    }
-    .summary-row div:first-child {
-      flex: 1;
-    }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #eef2ff;
-      color: #4f46e5;
-      font-size: 10px;
-      font-weight: 500;
-      white-space: nowrap;
-    }
+    .tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border)}
+    .tab{flex:1;padding:11px;font-size:13px;font-weight:500;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--sans)}
+    .tab.on{color:var(--text);border-bottom-color:var(--accent)}
 
-    .result-box {
-      border-radius: 12px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      padding: 8px 8px 4px;
-      min-height: 60px;
-      max-height: calc(100vh - 220px); 
-      overflow-y: auto;
-    }
+    .stats{display:flex;gap:8px;padding:12px 16px 4px}
+    .stat{flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center}
+    .stat-l{font-size:11px;color:var(--muted);margin-bottom:4px}
+    .stat-v{font-family:var(--serif);font-size:20px;font-weight:600}
 
-    .result-empty {
-      font-size: 13px;
-      color: #9ca3af;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 2px 8px;
-    }
+    .lst{padding:8px 16px 100px}
+    .cu{background:var(--card);border:1px solid var(--border);border-radius:var(--R);padding:15px 16px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all .12s}
+    .cu:active{transform:scale(.98);background:var(--warm)}
+    .cn{font-size:15px;font-weight:600}
+    .cs{font-size:12px;color:var(--sub);margin-top:2px}
+    .cb{font-family:var(--serif);font-size:18px;font-weight:600;white-space:nowrap}
+    .cb.pos{color:var(--green)}.cb.zero{color:var(--muted)}.cb.neg{color:var(--red)}
 
-    .result-item {
-      padding: 8px 9px;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      margin-bottom: 5px;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-    }
-    .result-item.highlight {
-      border-color: #4f46e5;
-      box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.35);
-    }
-    .result-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: #111827;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .result-name-badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: #eef2ff;
-      color: #4f46e5;
-    }
-    .result-detail {
-      font-size: 12px;
-      color: #4b5563;
-    }
+    .emp{text-align:center;padding:56px 20px;color:var(--muted);font-size:14px}
+    .emp-i{font-size:40px;margin-bottom:14px;opacity:.6}
 
-    .footer {
-      margin-top: 8px;
-      text-align: right;
-      font-size: 10px;
-      color: #9ca3af;
-    }
+    .fab{position:fixed;bottom:24px;right:calc(50% - 240px);width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;font-size:28px;border:none;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;z-index:50}
+    .fab:active{transform:scale(.9)}
+    @media(max-width:520px){.fab{right:20px}}
 
-    
-    @media (max-width: 480px) {
-      .app {
-        padding: 14px 10px 8px;
-      }
-      .app-title {
-        font-size: 18px;
-      }
-      .app-subtitle {
-        font-size: 11px;
-      }
-      .search-input {
-        font-size: 16px;
-      }
-      .result-name {
-        font-size: 14px;
-      }
-      .result-detail {
-        font-size: 12px;
-      }
-    }
-/* 🔐 Lock Screen */
-#lockScreen {
-  position: fixed;
-  inset: 0;
-  background: #f3f4f6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  z-index: 9999;
-}
+    /* ── MODAL ── */
+    .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:flex-end;justify-content:center}
+    .ov.show{display:flex}
+    .sh{background:var(--card);width:100%;max-width:520px;max-height:94vh;border-radius:22px 22px 0 0;overflow-y:auto;animation:up .22s ease-out}
+    @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .sb{width:36px;height:4px;background:#d4d4d4;border-radius:2px;margin:10px auto 0}
+    .shdr{padding:14px 20px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+    .st{font-size:17px;font-weight:700}
+    .sx{font-size:20px;background:none;border:none;cursor:pointer;color:var(--sub);padding:4px 8px}
+    .sbd{padding:16px 20px 28px}
 
-.lock-card {
-  width: 100%;
-  max-width: 340px;
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 22px 18px 18px;
-  box-shadow: 0 14px 40px rgba(0,0,0,0.10);
-  border: 1px solid #e5e7eb;
-}
+    .fg{margin-bottom:14px}
+    .fl{font-size:12px;color:var(--sub);margin-bottom:5px;display:block}
+    .fi{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:12px;font-size:15px;font-family:var(--sans);outline:none;background:var(--warm);transition:border-color .15s}
+    .fi:focus{border-color:var(--accent);background:var(--card)}
 
-.lock-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
+    .bp{width:100%;padding:14px;border-radius:14px;border:none;font-size:15px;font-weight:700;background:var(--accent);color:#fff;cursor:pointer;font-family:var(--sans)}
+    .bp:active{opacity:.8}
+    .bd{width:100%;padding:12px;border-radius:14px;border:1px solid #e8c8c8;font-size:13px;font-weight:500;background:none;color:var(--red);cursor:pointer;font-family:var(--sans);margin-top:20px}
 
-.lock-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 16px;
-  background: #eef2ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-}
+    /* ── DETAIL ── */
+    .dbw{text-align:center;padding:28px 0 24px;border-bottom:1px solid var(--border);margin-bottom:20px}
+    .dbl{font-size:12px;color:var(--sub);letter-spacing:.08em;margin-bottom:6px}
+    .db{font-family:var(--serif);font-size:42px;font-weight:600;letter-spacing:-.02em}
 
-.lock-title {
-  font-size: 16px;
-  font-weight: 800;
-  color: #111827;
-  line-height: 1.1;
-}
+    .da{display:flex;gap:10px;margin-bottom:20px}
+    .dab{flex:1;padding:16px 12px;border-radius:14px;border:none;font-size:16px;font-weight:700;cursor:pointer;font-family:var(--sans);display:flex;flex-direction:column;align-items:center;gap:4px}
+    .dab:active{transform:scale(.96)}
+    .dab span{font-size:11px;font-weight:400}
+    .dab-d{background:var(--gl);color:var(--green);border:1px solid #c2ddd0}
+    .dab-u{background:var(--rl);color:var(--red);border:1px solid #e4cbcb}
 
-.lock-sub {
-  font-size: 12px;
-  color: #6b7280;
-  margin-top: 2px;
-}
+    .tx{display:none;background:var(--bg);border-radius:var(--R);padding:18px;margin-bottom:20px}
+    .tx.show{display:block}
+    .txt{font-size:15px;font-weight:700;margin-bottom:14px}
 
-.lock-input {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 999px;
-  border: 1px solid #d1d5db;
-  font-size: 15px;
-  outline: none;
-  background: #f9fafb;
-}
+    .aq{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+    .aqb{padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans)}
+    .aqb:active{background:var(--accent);color:#fff}
 
-.lock-input:focus {
-  border-color: #4f46e5;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
-}
+    .sgw{position:relative;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff}
+    .sgc{width:100%;height:130px;display:block;touch-action:none;cursor:crosshair}
+    .sgp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:#ccc;pointer-events:none}
+    .sgx{position:absolute;top:8px;right:8px;font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;color:var(--sub);font-family:var(--sans)}
 
-.lock-btn {
-  width: 100%;
-  margin-top: 10px;
-  padding: 12px 14px;
-  border-radius: 999px;
-  border: none;
-  background: #4f46e5;
-  color: #ffffff;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
+    .hh{font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .hi{display:flex;justify-content:space-between;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--blight)}
+    .hi:last-child{border-bottom:none}
+    .hl{flex:1}
+    .hm{font-size:13px;font-weight:500}
+    .hd{font-size:11px;color:var(--muted);margin-top:3px}
+    .hby{font-size:10px;color:var(--muted)}
+    .hsg{width:44px;height:28px;border:1px solid var(--border);border-radius:6px;margin-top:4px;object-fit:contain;cursor:pointer}
+    .hr2{text-align:right}
+    .ha{font-family:var(--serif);font-size:16px;font-weight:700}
+    .ha.plus{color:var(--green)}.ha.minus{color:var(--red)}
+    .haf{font-size:11px;color:var(--muted);margin-top:3px}
 
-.lock-btn:active {
-  transform: translateY(1px);
-}
+    .sgov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;align-items:center;justify-content:center;padding:20px}
+    .sgov.show{display:flex}
+    .sgov img{max-width:90%;max-height:50vh;background:#fff;border-radius:14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 
-.lock-error {
-  display: none;
-  margin-top: 10px;
-  font-size: 12px;
-  color: #dc2626;
-}
+    /* ── Settings ── */
+    .setA{display:none;padding:16px}.setA.show{display:block}
+    .seT{font-size:15px;font-weight:600;margin-bottom:6px}
+    .seD{font-size:12px;color:var(--sub);margin-bottom:14px}
+    .seE{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--warm);border-radius:12px;margin-bottom:6px;font-size:13px}
+    .seE button{font-size:11px;border:1px solid var(--border);background:none;border-radius:8px;padding:3px 10px;cursor:pointer;color:var(--red);font-family:var(--sans)}
+    .seR{display:flex;gap:8px;margin-top:12px}
 
-.lock-hint {
-  margin-top: 10px;
-  font-size: 11px;
-  color: #9ca3af;
-  text-align: right;
-}
+    /* ── Toast ── */
+    .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--accent);color:#fff;padding:10px 22px;border-radius:999px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:500;pointer-events:none;font-family:var(--sans)}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+    @media(max-width:400px){.db{font-size:36px}.stat-v{font-size:17px}}
   </style>
 </head>
 <body>
-<div id="lockScreen">
-  <div class="lock-card">
-    <div class="lock-head">
-      <div class="lock-icon">🔒</div>
-      <div>
-        <div class="lock-title">손님 장부 검색</div>
-        <div class="lock-sub">비밀번호를 입력하세요</div>
+
+<!-- LOGIN -->
+<div id="LS">
+  <div class="li">
+    <div class="ll">
+      <div class="lm">pasta bro</div>
+      <div class="ln"></div>
+      <div class="ls">PREPAYMENT LEDGER</div>
+    </div>
+    <div class="lb">선결제 장부</div>
+    <button class="gb" id="gBtn">
+      <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Google로 시작하기
+    </button>
+    <div class="le" id="lErr"></div>
+  </div>
+  <div class="la">Nohae-ro 59, Gangbuk-gu, Seoul</div>
+</div>
+
+<!-- APP -->
+<div id="AP">
+  <div class="shell">
+    <div class="hdr">
+      <div class="ht">
+        <div class="hb">pasta bro</div>
+        <div class="hr"><span class="hn" id="uN"></span><button class="ho" id="loBtn">로그아웃</button></div>
+      </div>
+      <div class="sw"><span class="sic">🔍</span><input type="text" class="si" id="sI" placeholder="손님 이름 · 연락처 검색" autocomplete="off" /></div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-t="list">손님 목록</button>
+      <button class="tab" data-t="set">설정</button>
+    </div>
+    <div class="stats" id="stW">
+      <div class="stat"><div class="stat-l">총 손님</div><div class="stat-v" id="sT">0</div></div>
+      <div class="stat"><div class="stat-l">총 선결제 잔액</div><div class="stat-v" id="sB" style="color:var(--green)">₩0</div></div>
+    </div>
+    <div class="lst" id="lA">
+      <div class="emp" id="eM"><div class="emp-i">📒</div><div>아직 등록된 손님이 없습니다<br><b>+</b> 버튼으로 추가하세요</div></div>
+      <div id="cL"></div>
+    </div>
+    <div class="setA" id="sA">
+      <div class="seT">접근 허용 이메일</div>
+      <div class="seD">이 이메일만 로그인할 수 있습니다</div>
+      <div id="eL"></div>
+      <div class="seR">
+        <input type="email" class="fi" id="nE" placeholder="이메일 입력" style="flex:1" />
+        <button class="bp" id="aEB" style="width:auto;padding:11px 20px;font-size:13px">추가</button>
       </div>
     </div>
-
-    <input
-      id="passwordInput"
-      class="lock-input"
-      type="password"
-      inputmode="numeric"
-      placeholder="비밀번호"
-      autocomplete="off"
-    />
-
-    <button id="unlockBtn" class="lock-btn">확인</button>
-
-    <div id="lockError" class="lock-error">비밀번호가 올바르지 않습니다.</div>
-    <div class="lock-hint">생일</div>
+    <button class="fab" id="fab">+</button>
   </div>
 </div>
 
-  <div class="app">
-    <div class="app-inner">
-      <div class="app-header">
-        <div class="icon-badge">📒</div>
-        <div>
-          <div class="app-title">손님 장부 검색</div>
-          <div class="app-subtitle">이름을 입력하면 어느 장부, 몇 페이지인지 바로 확인</div>
-        </div>
-      </div>
-
-      <div class="search-box-wrapper">
-        <div class="search-label">손님 이름</div>
-        <span class="search-icon">🔍</span>
-        <input
-          id="searchInput"
-          type="text"
-          class="search-input"
-          placeholder="예) 김철수, 이영희"
-          autocomplete="off"
-        />
-        <button id="clearBtn" class="clear-btn">지우기</button>
-      </div>
-
-      <div class="summary-row">
-        <div>입력한 이름과 <b>포함되는</b> 모든 손님이 표시됩니다.</div>
-        <div class="chip">
-          📚 <span id="totalCountText">총 0명 등록</span>
-        </div>
-      </div>
-
-      <div class="result-box" id="resultBox">
-        <div class="result-empty">
-          🔎 위에 이름을 입력하면 결과가 여기 표시됩니다.
-        </div>
-      </div>
-
-      <div class="footer">
-        검색 결과 클릭 없이 바로 확인 가능
-      </div>
+<!-- ADD MODAL -->
+<div class="ov" id="aOv">
+  <div class="sh">
+    <div class="sb"></div>
+    <div class="shdr"><div class="st">새 손님 등록</div><button class="sx" id="aX">✕</button></div>
+    <div class="sbd">
+      <div class="fg"><label class="fl">이름 *</label><input type="text" class="fi" id="aN" placeholder="홍길동" /></div>
+      <div class="fg"><label class="fl">연락처</label><input type="tel" class="fi" id="aP" placeholder="010-0000-0000" /></div>
+      <div class="fg"><label class="fl">메모</label><input type="text" class="fi" id="aM" placeholder="단골, 알레르기 등" /></div>
+      <button class="bp" id="aS">등록하기</button>
     </div>
   </div>
+</div>
 
-  <script>
-// 🔐 Lock
-const PASSWORD = "0000"; // 
+<!-- DETAIL MODAL -->
+<div class="ov" id="dOv">
+  <div class="sh">
+    <div class="sb"></div>
+    <div class="shdr"><div class="st" id="dN">—</div><button class="sx" id="dX">✕</button></div>
+    <div class="sbd">
+      <div id="dP" style="font-size:13px;color:var(--sub)"></div>
+      <div id="dM" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+      <div class="dbw">
+        <div class="dbl">선결제 잔액</div>
+        <div class="db" id="dB">₩0</div>
+      </div>
+      <div class="da">
+        <button class="dab dab-d" id="bD">＋ 충전<span>선결제 입금</span></button>
+        <button class="dab dab-u" id="bU">－ 사용<span>식사 차감</span></button>
+      </div>
+      <div class="tx" id="tB">
+        <div class="txt" id="tT">충전</div>
+        <div class="fg">
+          <label class="fl">금액 (원)</label>
+          <div class="aq">
+            <button class="aqb" data-v="5000">5천</button>
+            <button class="aqb" data-v="10000">1만</button>
+            <button class="aqb" data-v="30000">3만</button>
+            <button class="aqb" data-v="50000">5만</button>
+            <button class="aqb" data-v="100000">10만</button>
+          </div>
+          <input type="number" class="fi" id="tA" placeholder="직접 입력" inputmode="numeric" />
+        </div>
+        <div class="fg"><label class="fl">메모</label><input type="text" class="fi" id="tM" placeholder="파스타 2인분 등" /></div>
+        <div class="fg">
+          <label class="fl">손님 서명 (선택)</label>
+          <div class="sgw"><canvas class="sgc" id="sgC"></canvas><span class="sgp" id="sgP">여기에 서명하세요</span><button class="sgx" id="sgX">지우기</button></div>
+        </div>
+        <button class="bp" id="tS">확인</button>
+      </div>
+      <div class="hh">📋 거래 내역</div>
+      <div id="dH"></div>
+      <button class="bd" id="delC">이 손님 삭제</button>
+    </div>
+  </div>
+</div>
 
-const lockScreen = document.getElementById("lockScreen");
-const passwordInput = document.getElementById("passwordInput");
-const unlockBtn = document.getElementById("unlockBtn");
-const lockError = document.getElementById("lockError");
+<!-- Sig Overlay -->
+<div class="sgov" id="sgOv"><img id="sgOI" src="" /></div>
+<!-- Toast -->
+<div class="toast" id="tst"></div>
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+const FC={apiKey:"AIzaSyArHG7EbxhV5cIIixOcY9y162svZXx7ffA",authDomain:"pastabro-4e5b0.firebaseapp.com",projectId:"pastabro-4e5b0",storageBucket:"pastabro-4e5b0.firebasestorage.app",messagingSenderId:"614383037631",appId:"1:614383037631:web:7ec4593968f5832cb3aa0a"};
+const DE=["kju80259795@gmail.com"];
 
-document.body.style.overflow = "hidden";
+firebase.initializeApp(FC);
+const au=firebase.auth(),db=firebase.firestore(),gP=new firebase.auth.GoogleAuthProvider();
+const $=id=>document.getElementById(id);
+let cId=null,cTy=null,al=[...DE],allC=[];
 
-function unlock() {
-  if ((passwordInput.value || "").trim() === PASSWORD) {
-    lockScreen.style.display = "none";
-    document.body.style.overflow = "";
-  } else {
-    lockError.style.display = "block";
-    passwordInput.value = "";
-    passwordInput.focus();
-  }
+// Auth
+$("gBtn").addEventListener("click",()=>{au.signInWithPopup(gP).catch(e=>{$("lErr").textContent="로그인 실패: "+e.message;$("lErr").style.display="block"})});
+$("loBtn").addEventListener("click",()=>au.signOut());
+au.onAuthStateChanged(u=>{
+  if(!u){$("LS").style.display="flex";$("AP").style.display="none";return}
+  db.collection("settings").doc("allowed_emails").get().then(d=>{
+    if(d.exists&&d.data().list)al=d.data().list;
+    if(!al.includes(u.email)){$("lErr").textContent="접근 권한 없음 ("+u.email+")";$("lErr").style.display="block";au.signOut();return}
+    $("LS").style.display="none";$("AP").style.display="block";
+    $("uN").textContent=u.displayName||u.email;
+    loadC();loadE();
+  });
+});
+
+function toast(m){$("tst").textContent=m;$("tst").classList.add("show");setTimeout(()=>$("tst").classList.remove("show"),2000)}
+
+// Tabs
+document.querySelectorAll(".tab").forEach(t=>{t.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));t.classList.add("on");
+  const v=t.dataset.t;
+  $("lA").style.display=v==="list"?"block":"none";
+  $("sA").className=v==="set"?"setA show":"setA";
+  $("stW").style.display=v==="list"?"flex":"none";
+  $("fab").style.display=v==="list"?"flex":"none";
+})});
+
+// Customers
+function loadC(){
+  db.collection("customers").orderBy("name").onSnapshot(s=>{
+    allC=[];s.forEach(d=>allC.push({id:d.id,...d.data()}));render();
+  });
+}
+function render(){
+  const kw=$("sI").value.trim();
+  const ls=kw?allC.filter(c=>c.name.includes(kw)||(c.phone||"").includes(kw)):allC;
+  $("cL").innerHTML="";
+  $("eM").style.display=ls.length===0?"block":"none";
+  let tot=0;allC.forEach(c=>tot+=(c.balance||0));
+  $("sT").textContent=allC.length;
+  $("sB").textContent="₩"+tot.toLocaleString();
+  ls.forEach(c=>{
+    const d=document.createElement("div");d.className="cu";
+    const b=c.balance||0,cl=b>0?"pos":b<0?"neg":"zero";
+    d.innerHTML=`<div><div class="cn">${c.name}</div><div class="cs">${c.phone||""} ${c.memo?"· "+c.memo:""}</div></div><div class="cb ${cl}">₩${b.toLocaleString()}</div>`;
+    d.addEventListener("click",()=>openD(c.id));$("cL").appendChild(d);
+  });
+}
+$("sI").addEventListener("input",render);
+
+// Add
+$("fab").addEventListener("click",()=>$("aOv").classList.add("show"));
+$("aX").addEventListener("click",()=>$("aOv").classList.remove("show"));
+$("aOv").addEventListener("click",e=>{if(e.target===$("aOv"))$("aOv").classList.remove("show")});
+$("aS").addEventListener("click",()=>{
+  const n=$("aN").value.trim();if(!n){toast("이름을 입력하세요");return}
+  db.collection("customers").add({name:n,phone:$("aP").value.trim(),memo:$("aM").value.trim(),balance:0,createdAt:firebase.firestore.FieldValue.serverTimestamp()}).then(()=>{
+    toast(n+"님 등록 완료");$("aN").value="";$("aP").value="";$("aM").value="";$("aOv").classList.remove("show");
+  });
+});
+
+// Detail
+function openD(id){
+  cId=id;$("dOv").classList.add("show");$("tB").classList.remove("show");
+  db.collection("customers").doc(id).get().then(d=>{
+    const c=d.data();$("dN").textContent=c.name;$("dP").textContent=c.phone||"";$("dM").textContent=c.memo||"";
+    const b=c.balance||0;$("dB").textContent="₩"+b.toLocaleString();
+    $("dB").style.color=b>0?"var(--green)":b<0?"var(--red)":"var(--muted)";
+  });
+  loadH(id);
+}
+function closeD(){$("dOv").classList.remove("show");cId=null}
+$("dX").addEventListener("click",closeD);
+$("dOv").addEventListener("click",e=>{if(e.target===$("dOv"))closeD()});
+
+$("bD").addEventListener("click",()=>openTx("deposit"));
+$("bU").addEventListener("click",()=>openTx("withdraw"));
+function openTx(t){cTy=t;$("tT").textContent=t==="deposit"?"＋ 충전":"－ 사용";$("tB").classList.add("show");$("tA").value="";$("tM").value="";clrSig()}
+
+document.querySelectorAll(".aqb").forEach(b=>{b.addEventListener("click",()=>$("tA").value=b.dataset.v)});
+
+$("tS").addEventListener("click",()=>{
+  const amt=parseInt($("tA").value);if(!amt||amt<=0){toast("금액을 입력하세요");return}
+  const sig=getSig(),memo=$("tM").value.trim(),delta=cTy==="deposit"?amt:-amt;
+  const ref=db.collection("customers").doc(cId);
+  db.runTransaction(tx=>{
+    return tx.get(ref).then(doc=>{
+      const nb=(doc.data().balance||0)+delta;
+      tx.update(ref,{balance:nb});
+      tx.set(ref.collection("transactions").doc(),{type:cTy,amount:amt,delta,memo,signature:sig||null,balanceAfter:nb,createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:au.currentUser.email});
+    });
+  }).then(()=>{toast(cTy==="deposit"?"충전 완료 ✓":"사용 처리 완료 ✓");$("tB").classList.remove("show");openD(cId)});
+});
+
+function loadH(id){
+  db.collection("customers").doc(id).collection("transactions").orderBy("createdAt","desc").limit(50).get().then(s=>{
+    const h=$("dH");h.innerHTML="";
+    if(s.empty){h.innerHTML='<div style="font-size:13px;color:var(--muted);padding:14px 0">거래 내역이 없습니다</div>';return}
+    s.forEach(d=>{
+      const t=d.data(),div=document.createElement("div");div.className="hi";
+      const p=t.delta>0,dt=t.createdAt?new Date(t.createdAt.toDate()).toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"";
+      div.innerHTML=`<div class="hl"><div class="hm">${t.memo||(p?"충전":"사용")}</div><div class="hd">${dt}</div><div class="hby">${t.createdBy||""}</div>${t.signature?'<img class="hsg" src="'+t.signature+'" onclick="showSig(this.src)" />':""}</div><div class="hr2"><div class="ha ${p?'plus':'minus'}">${p?'+':''}₩${t.delta.toLocaleString()}</div><div class="haf">잔액 ₩${(t.balanceAfter||0).toLocaleString()}</div></div>`;
+      h.appendChild(div);
+    });
+  });
 }
 
-unlockBtn.addEventListener("click", unlock);
-passwordInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") unlock();
-});
+$("delC").addEventListener("click",()=>{if(!confirm("정말 삭제?\n모든 거래 내역이 삭제됩니다."))return;db.collection("customers").doc(cId).delete().then(()=>{toast("삭제 완료");closeD()})});
 
-// 페이지 열리면 자동 포커스
-window.addEventListener("load", () => {
-  passwordInput.focus();
-});
+// Signature
+const cv=$("sgC"),cx=cv.getContext("2d");let dr=false,hs=false;
+function rsCv(){const r=cv.parentElement.getBoundingClientRect();cv.width=r.width;cv.height=130;cx.strokeStyle="#1a1a1a";cx.lineWidth=2;cx.lineCap="round";cx.lineJoin="round"}
+function gp(e){const r=cv.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top}}
+cv.addEventListener("pointerdown",e=>{dr=true;hs=true;$("sgP").style.display="none";const p=gp(e);cx.beginPath();cx.moveTo(p.x,p.y)});
+cv.addEventListener("pointermove",e=>{if(!dr)return;const p=gp(e);cx.lineTo(p.x,p.y);cx.stroke()});
+cv.addEventListener("pointerup",()=>dr=false);
+cv.addEventListener("pointerleave",()=>dr=false);
+function clrSig(){rsCv();hs=false;$("sgP").style.display="block"}
+function getSig(){return hs?cv.toDataURL("image/png"):null}
+$("sgX").addEventListener("click",clrSig);
+const ob=new MutationObserver(()=>{if($("tB").classList.contains("show"))setTimeout(rsCv,50)});
+ob.observe($("tB"),{attributes:true,attributeFilter:["class"]});
 
-    //  손님 데이터
-    
-    const data = [
- { name: "이수지님 (동물보호팀)", book: "1권", page: "1섹션 1번" },
-{ name: "정소희님 (가족팀)", book: "1권", page: "1섹션 2번" },
-{ name: "양유진님 (홍보담당관)", book: "1권", page: "1섹션 3번" },
-{ name: "여권팀 (민원여권과)", book: "1권", page: "1섹션 4번" },
-{ name: "조유미 (생활체육과)", book: "1권", page: "1섹션 5번" },
-{ name: "이혜영 (기획예산과)", book: "1권", page: "1섹션 6번" },
-{ name: "민시원 (복지정책과)", book: "1권", page: "1섹션 7번" },
-{ name: "김시진 (민원처리팀)", book: "1권", page: "1섹션 8번" },
-{ name: "김형귀 (민원처리팀)", book: "1권", page: "1섹션 9번" },
-{ name: "신청사업건립추진단", book: "1권", page: "1섹션 10번" },
-{ name: "송혜수님 (xx행정과)", book: "1권", page: "1섹션 11번" },
-{ name: "이지우님 (세무2과)", book: "1권", page: "1섹션 12번" },
-{ name: "이정은님 (복지정책과)", book: "1권", page: "1섹션 13번" },
-{ name: "재정비 촉진팀 (강명수님)", book: "1권", page: "1섹션 14번" },
-{ name: "조춘기님 (행정지원과)", book: "1권", page: "1섹션 15번" },
-{ name: "서우경 (세무2과)", book: "1권", page: "1섹션 16번" },
-{ name: "상권 활성화", book: "1권", page: "1섹션 17번" },
-{ name: "이상엽 (환경과)", book: "1권", page: "1섹션 18번" },
-{ name: "손현준 (세무2과)", book: "1권", page: "1섹션 19번" },
-{ name: "이영숙 (세무2과)", book: "1권", page: "1섹션 20번" },
-{ name: "최유진 (홍보기획팀)", book: "1권", page: "1섹션 21번" },
-{ name: "도시계획팀", book: "1권", page: "1섹션 22번" },
-{ name: "부동산정보과 부동산관리", book: "1권", page: "2섹션 1번" },
-{ name: "홍보담당관(박지연)", book: "1권", page: "2섹션 2번" },
-{ name: "홍보담당관(오수민)", book: "1권", page: "2섹션 3번" },
-{ name: "이한솔 (건축과)", book: "1권", page: "2섹션 4번" },
-{ name: "재개발 재건축 2팀", book: "1권", page: "2섹션 5번" },
-{ name: "민원여권과(손은주)", book: "1권", page: "2섹션 6번" },
-{ name: "어르신 장애인과(복혜경)", book: "1권", page: "2섹션 7번" },
-{ name: "부구름", book: "1권", page: "2섹션 8번" },
-{ name: "김예림 (디지털정보과)", book: "1권", page: "2섹션 9번" },
-{ name: "한준기 (건축과)", book: "1권", page: "2섹션 10번" },
-{ name: "오지은 (생활보장과)", book: "1권", page: "2섹션 11번" },
-{ name: "김혜림 (민원여권과)", book: "1권", page: "2섹션 12번" },
-{ name: "민원행정팀", book: "1권", page: "2섹션 13번" },
-{ name: "강선미 (복지정책과)", book: "1권", page: "2섹션 14번" },
-{ name: "김인혜 (감사과)", book: "1권", page: "2섹션 15번" },
-{ name: "지역경제과 시장지원팀", book: "1권", page: "2섹션 16번" },
-{ name: "김도은 (도시계획과)", book: "1권", page: "2섹션 17번" },
-{ name: "안귀형 (도시계획과)", book: "1권", page: "2섹션 18번" },
-{ name: "김진범 (생활체육과)", book: "1권", page: "2섹션 19번" },
-{ name: "양유경 (감사담당관)", book: "1권", page: "2섹션 20번" },
-{ name: "이혜인 (환경과)", book: "1권", page: "3섹션 1번"},
-{ name: "박미경 (생활보장과)", book: "1권", page: "3섹션 2번"},
-{ name: "한경아 (생활체육과)", book: "1권", page: "3섹션 3번"},
-{ name: "문진희 (도시계획과)", book: "1권", page: "3섹션 4번"},
-{ name: "전준선 (청소행정과)", book: "1권", page: "3섹션 5번"},
-{ name: "감사과 민원순찰팀", book: "1권", page: "3섹션 6번"},
-{ name: "김도은님(도시계획과)", book: "1권", page: "3섹션 7번"},
-{ name: "김예리 (기획예산과)", book: "1권", page: "3섹션 8번"},
-{ name: "재난안전과)", book: "1권", page: "3섹션 9번"},
-{ name: "생활체험팀", book: "1권", page: "3섹션 10번"},
-{ name: "서완범", book: "1권", page: "3섹션 11번"},
-{ name: "신승철", book: "1권", page: "3섹션 12번"},
-{ name: "이선우", book: "1권", page: "3섹션 13번"},
-{ name: "조성경", book: "1권", page: "3섹션 14번"},
-{ name: "지근정님(세무1과)", book: "1권", page: "3섹션 15번"},
-{ name: "재난안전과 민방위팀", book: "1권", page: "3섹션 16번"},
-{ name: "이오라님(청소행정과)", book: "1권", page: "3섹션 17번"},
-{ name: "부동산정보과 지가 조사팀(작은수첩)", book: "2권", page: "1섹션 1번" },
-{ name: "도시계획과 주거환경관리팀", book: "2권", page: "1섹션 2번" },
-{ name: "탁선일 (주택과)", book: "2권", page: "1섹션 3번" },
-{ name: "김정금 / 이정원 (민원행정팀)", book: "2권", page: "1섹션 4번" },
-{ name: "행정팀 (부동산정보과)", book: "2권", page: "1섹션 5번" },
-{ name: "생활 보장과(김선영)", book: "2권", page: "1섹션 6번" },
-{ name: "부동산정보과 (카드결제취소)", book: "2권", page: "1섹션 7번" },
-{ name: "생활보장과 (생활보장팀, 카드결제 pos취소)", book: "2권", page: "1섹션 8번" },
-{ name: "김상진 (재활지원팀)", book: "2권", page: "1섹션 9번" },
-{ name: "조상미", book: "2권", page: "1섹션 10번" },
-{ name: "공원기획팀 (이지후님,임미라님 사용)", book: "2권", page: "1섹션 11번" },
-{ name: "돌봄지원팀", book: "2권", page: "1섹션 12번" },
-{ name: "김다영", book: "2권", page: "1섹션 13번" },
-{ name: "건축지원팀", book: "2권", page: "1섹션 14번" },
-{ name: "건축정책팀", book: "2권", page: "1섹션 15번" },
-{ name: "교육지원과 평생팀(이인영)", book: "2권", page: "1섹션 16번" },
-{ name: "윤상미(문화관광체육과)", book: "2권", page: "1섹션 17번" },
-{ name: "건축안전팀", book: "2권", page: "1섹션 18번" },
-{ name: "여은지 (건축과)", book: "2권", page: "1섹션 19번" },
-{ name: "도시 경관팀(건축과)", book: "2권", page: "1섹션 20번" },
-{ name: "허니피부과(POS 취소) 영수증 부착", book: "2권", page: "2섹션 1번" },
-{ name: "정하윤", book: "2권", page: "2섹션 2번" },
-{ name: "윤신자(재무과)", book: "2권", page: "2섹션 3번" },
-{ name: "김운창", book: "2권", page: "2섹션 4번" },
-{ name: "허정연", book: "2권", page: "2섹션 5번" },
-{ name: "허지원", book: "2권", page: "2섹션 6번" },
-{ name: "박연희", book: "2권", page: "2섹션 7번" },
-{ name: "김원선", book: "2권", page: "2섹션 8번" },
-{ name: "임혜영 (기획예산과)", book: "2권", page: "2섹션 9번" },
-{ name: "최재정 (감사담당관)", book: "2권", page: "2섹션 10번" },
-{ name: "박현승 (여권팀)", book: "2권", page: "2섹션 11번" },
-{ name: "이원령 (여권팀)", book: "2권", page: "2섹션 12번" },
-{ name: "노미숙 (여권팀)", book: "2권", page: "2섹션 13번" },
-{ name: "최승미 (여권팀)", book: "2권", page: "2섹션 14번" },
-{ name: "이윤지", book: "2권", page: "2섹션 15번" },
-{ name: "홍상수", book: "2권", page: "2섹션 16번" },
-{ name: "박하람", book: "2권", page: "2섹션 17번" },
-{ name: "김현정 (청소행정과복지팀)", book: "2권", page: "2섹션 18번" },
-{ name: "김수정 (민원여권과)", book: "2권", page: "2섹션 19번" },
-{ name: "김병무 (김병무)", book: "2권", page: "2섹션 20번" },
-{ name: "디지털정보과 (한아영)", book: "2권", page: "3섹션 1번" },
-{ name: "민원여권과 (홍유란)", book: "2권", page: "3섹션 2번" },
-{ name: "재개발재건축지원단 (최정희)", book: "2권", page: "3섹션 3번" },
-{ name: "건축과 (최일도)", book: "2권", page: "3섹션 4번" },
-{ name: "이지희 (세무2과)", book: "2권", page: "3섹션 5번" },
-{ name: "문화관광과 (이순영)", book: "2권", page: "3섹션 6번" },
-{ name: "허정윤 (행정지원과·인사팀)", book: "2권", page: "3섹션 7번" },
-{ name: "김창민 (도시경관팀)", book: "2권", page: "3섹션 8번" },
-{ name: "서지윤 (복지정책과)", book: "2권", page: "3섹션 9번" },
-{ name: "건축과 공용시설팀", book: "2권", page: "3섹션 10번" },
-{ name: "문화예술팀", book: "2권", page: "3섹션 11번" },
-{ name: "정책개발팀", book: "2권", page: "3섹션 12번" },
-{ name: "대기관리팀", book: "2권", page: "3섹션 13번" },
-{ name: "안경호 (세무2과)", book: "2권", page: "3섹션 14번" },
-{ name: "김소정 (미래교육팀)", book: "2권", page: "3섹션 15번" },
-{ name: "이지원 (기획조정팀)", book: "2권", page: "3섹션 16번" },
-{ name: "이지원 (정책팀)", book: "2권", page: "3섹션 17번" },
-{ name: "이지원 (예산팀)", book: "2권", page: "3섹션 18번" },
-{ name: "이지원 (법제통계팀)", book: "2권", page: "3섹션 19번" },
-{ name: "박현 (세무2과)", book: "2권", page: "3섹션 20번" },
-{ name: "박은숙 (행정지원과)", book: "2권", page: "4섹션 1번" },
-{ name: "김지원 (세무2과)", book: "2권", page: "4섹션 2번" },
-{ name: "김지혜 (세무2과)", book: "2권", page: "4섹션 3번" },
-{ name: "임찬미 (복지정책과)", book: "2권", page: "4섹션 4번" },
-{ name: "마을협력팀", book: "2권", page: "4섹션 5번" },
-{ name: "이효진 (복지정책과)", book: "2권", page: "4섹션 6번" },
-{ name: "정유미 (홍보담당관)", book: "2권", page: "4섹션 7번" },
-{ name: "노채원 (행정지원과)", book: "2권", page: "4섹션 8번" },
-{ name: "교육지원과 교육협력팀", book: "2권", page: "4섹션 9번" },
-{ name: "조정연", book: "2권", page: "4섹션 10번" },
-{ name: "김지혜 (세무1과 0238)", book: "2권", page: "4섹션 11번" },
-{ name: "김재이 (행정지원과)", book: "2권", page: "4섹션 12번" },
-{ name: "남궁진 (생활체육과)", book: "2권", page: "4섹션 13번" },
-{ name: "백경원", book: "2권", page: "4섹션 14번" },
-{ name: "허유정 (세무2과)", book: "2권", page: "4섹션 15번" },
-{ name: "김명수 (세무2과)", book: "2권", page: "4섹션 16번" },
-{ name: "김현지 (세무2과)", book: "2권", page: "4섹션 17번" },
-{ name: "이가영 (세무2과)", book: "2권", page: "4섹션 18번" },
-{ name: "곽유선 (재무과)", book: "2권", page: "4섹션 19번" },
-{ name: "최재언", book: "2권", page: "4섹션 20번" },
-{ name: "구청 재무과(pos취소.카드결제)", book: "3권", page: "1섹션 1번" },
-{ name: "환경 기후팀 (녹색에너지)", book: "3권", page: "1섹션 2번" },
-{ name: "김민아 (청소년과)", book: "3권", page: "1섹션 3번" },
-{ name: "희망복지팀", book: "3권", page: "1섹션 4번" },
-{ name: "교육지원팀", book: "3권", page: "1섹션 5번" },
-{ name: "서재민", book: "3권", page: "1섹션 6번" },
-{ name: "최효비", book: "3권", page: "1섹션 7번" },
-{ name: "서진희", book: "3권", page: "1섹션 8번" },
-{ name: "김도영 (동물보호팀)", book: "3권", page: "1섹션 9번" },
-{ name: "전수미 (민원처리팀)", book: "3권", page: "1섹션 10번" },
-{ name: "디지털정보과 (시스템팀)", book: "3권", page: "1섹션 11번" },
-{ name: "배원열 (홍보영상팀)", book: "3권", page: "1섹션 12번" },
-{ name: "부동산 정보과 공간정보팀", book: "3권", page: "1섹션 13번" },
-{ name: "염경오", book: "3권", page: "1섹션 14번" },
-{ name: "박주원", book: "3권", page: "1섹션 15번" },
-{ name: "김상연", book: "3권", page: "1섹션 16번" },
-{ name: "최병남", book: "3권", page: "1섹션 17번" },
-{ name: "정현숙", book: "3권", page: "1섹션 18번" },
-{ name: "조경팀 (조경팀)", book: "3권", page: "1섹션 19번" },
-{ name: "박지영", book: "3권", page: "1섹션 20번" },
-{ name: "미래교육팀", book: "3권", page: "2섹션 1번" },
-{ name: "공원관리팀", book: "3권", page: "2섹션 2번" },
-{ name: "재개발 재개축 지원단", book: "3권", page: "2섹션 3번" },
-{ name: "안형욱", book: "3권", page: "2섹션 4번" },
-{ name: "이슬기 (재무과)", book: "3권", page: "2섹션 5번" },
-{ name: "지역경제과", book: "3권", page: "2섹션 6번" },
-{ name: "소상공인 지역경제과", book: "3권", page: "2섹션 7번" },
-{ name: "신소영", book: "3권", page: "2섹션 8번" },
-{ name: "주거정비과 재개발 재건축 1팀", book: "3권", page: "2섹션 9번" },
-{ name: "조훈진", book: "3권", page: "2섹션 10번" },
-{ name: "모아 주택팀", book: "3권", page: "2섹션 11번" },
-{ name: "이유빈", book: "3권", page: "2섹션 12번" },
-{ name: "자연 생태팀", book: "3권", page: "2섹션 13번" },
-{ name: "최지혜", book: "3권", page: "2섹션 14번" },
-{ name: "부동산 정보 지적관리팀", book: "3권", page: "2섹션 15번" },
-{ name: "이은희 (세무2과)", book: "3권", page: "2섹션 16번" },
-{ name: "이은주 (세무2과)", book: "3권", page: "2섹션 17번" },
-{ name: "황교영 (세무2과)", book: "3권", page: "2섹션 18번" },
-{ name: "최미림 (세무2과)", book: "3권", page: "2섹션 19번" },
-{ name: "김연희 (세무2과)", book: "3권", page: "2섹션 20번" },
-{ name: "이혜원 (세무2과)", book: "3권", page: "2섹션 21번" },
-{ name: "이상욱 (지역경제과)", book: "3권", page: "3섹션 1번" },
-{ name: "신지연 (주택과)", book: "3권", page: "3섹션 2번" },
-{ name: "이재남 (생활보장과 통합조사팀)", book: "3권", page: "3섹션 3번" },
-{ name: "이아란 (감사담당관)", book: "3권", page: "3섹션 4번" },
-{ name: "정인희 (세무2과)", book: "3권", page: "3섹션 5번" },
-{ name: "정태영 (지역경제과시장지원팀)", book: "3권", page: "3섹션 6번" },
-{ name: "배성준 (디지털정보과)", book: "3권", page: "3섹션 7번" },
-{ name: "이무비 (주택과)", book: "3권", page: "3섹션 8번" },
-{ name: "한해니 (홍보담당관)", book: "3권", page: "3섹션 9번" },
-{ name: "주거정비과 행정팀", book: "3권", page: "3섹션 10번" },
-{ name: "김소영 (민원여권과)", book: "3권", page: "3섹션 11번" },
-{ name: "김윤희 (민원여권과)", book: "3권", page: "3섹션 12번" },
-{ name: "이지선 (교육지원과)", book: "3권", page: "3섹션 13번" },
-{ name: "권희주 (교육지원과)", book: "3권", page: "3섹션 14번" },
-{ name: "장연정 (통합조사팀·생활보장과)", book: "3권", page: "3섹션 15번" },
-{ name: "조남진 (통합조사팀·생활보장과)", book: "3권", page: "3섹션 16번" },
-{ name: "김지은 (통합조사팀·생활보장과)", book: "3권", page: "3섹션 17번" },
-{ name: "서동주 (세무2과)", book: "3권", page: "3섹션 18번" },
-{ name: "김소연 (일자리청년과 청년정책팀)", book: "3권", page: "3섹션 19번" },
-{ name: "홍보담당관 (손주리)", book: "3권", page: "3섹션 20번" },
+window.showSig=function(s){$("sgOI").src=s;$("sgOv").classList.add("show")};
+$("sgOv").addEventListener("click",()=>$("sgOv").classList.remove("show"));
 
+// Emails
+function loadE(){db.collection("settings").doc("allowed_emails").get().then(d=>{if(d.exists&&d.data().list)al=d.data().list;renE()})}
+function renE(){const c=$("eL");c.innerHTML="";al.forEach((em,i)=>{const d=document.createElement("div");d.className="seE";d.innerHTML=`<span>${em}</span><button onclick="rmE(${i})">삭제</button>`;c.appendChild(d)})}
+$("aEB").addEventListener("click",()=>{const em=$("nE").value.trim().toLowerCase();if(!em||!em.includes("@")){toast("올바른 이메일 입력");return}if(al.includes(em)){toast("이미 등록됨");return}al.push(em);savE();$("nE").value=""});
+window.rmE=function(i){if(al.length<=1){toast("최소 1명 필요");return}if(!confirm(al[i]+" 삭제?"))return;al.splice(i,1);savE()};
+function savE(){db.collection("settings").doc("allowed_emails").set({list:al}).then(()=>{renE();toast("저장 ✓")})}
 
-      // 예시
-      { name: "홍길동", book: "1권", page: "45쪽" },
-      { name: "최민수", book: "3권", page: "12쪽" },
-      { name: "정수빈", book: "2권", page: "5쪽" },
-      { name: "김영민", book: "4권", page: "18쪽" },
-    ];
-
-    const input = document.getElementById("searchInput");
-    const resultBox = document.getElementById("resultBox");
-    const clearBtn = document.getElementById("clearBtn");
-    const totalCountText = document.getElementById("totalCountText");
-
-    
-    totalCountText.textContent = `총 ${data.length}명 등록`;
-
-    function renderResults(keyword) {
-      resultBox.innerHTML = "";
-
-      const trimmed = keyword.trim();
-
-      if (!trimmed) {
-        resultBox.innerHTML = `
-          <div class="result-empty">
-            🔎 위에 이름을 입력하면 결과가 여기 표시됩니다.
-          </div>
-        `;
-        return;
-      }
-
-      const results = data.filter(item => item.name.includes(trimmed));
-
-      if (results.length === 0) {
-        resultBox.innerHTML = `
-          <div class="result-empty">
-            ⚠️ "<b>${trimmed}</b>"(으)로 등록된 손님이 없습니다.
-          </div>
-        `;
-        return;
-      }
-
-      results.forEach((item, index) => {
-        const div = document.createElement("div");
-        div.className = "result-item" + (index === 0 ? " highlight" : "");
-        div.innerHTML = `
-          <div class="result-name">
-            ${item.name}
-            <span class="result-name-badge">${index === 0 ? "가장 일치" : "포함"}</span>
-          </div>
-          <div class="result-detail">
-            장부 <b>${item.book}</b> · <b>${item.page}</b>
-          </div>
-        `;
-        resultBox.appendChild(div);
-      });
-    }
-
-    input.addEventListener("input", () => {
-      const value = input.value;
-      clearBtn.classList.toggle("show", value.length > 0);
-      renderResults(value);
-    });
-
-    clearBtn.addEventListener("click", () => {
-      input.value = "";
-      clearBtn.classList.remove("show");
-      input.focus();
-      renderResults("");
-    });
-
-    
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-      }
-    });
-  </script>
-
+// PWA
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+</script>
 </body>
 </html>
-
-
-
