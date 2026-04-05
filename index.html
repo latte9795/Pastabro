@@ -290,8 +290,13 @@ const $=id=>document.getElementById(id);
 let cId=null,cTy=null,al=[...DE],allC=[],isAdmin=false;
 
 // Auth
-$("gBtn").addEventListener("click",()=>{au.signInWithRedirect(gP)});
-au.getRedirectResult().catch(e=>{if(e.code){$("lErr").textContent="로그인 실패: "+e.message;$("lErr").style.display="block"}});
+$("gBtn").addEventListener("click",()=>{
+  // 인앱 브라우저 감지 (카카오, 인스타 등)
+  const ua=navigator.userAgent||"";
+  const inApp=/KAKAOTALK|Instagram|FBAN|FBAV|NAVER|Line/i.test(ua);
+  if(inApp){$("lErr").textContent="카카오/인스타 브라우저에서는 로그인이 안 됩니다. 오른쪽 ⋯ 메뉴에서 '크롬에서 열기'를 눌러주세요.";$("lErr").style.display="block";return}
+  au.signInWithPopup(gP).catch(e=>{$("lErr").textContent="로그인 실패: "+e.message;$("lErr").style.display="block"});
+});
 $("loBtn").addEventListener("click",()=>au.signOut());
 au.onAuthStateChanged(u=>{
   if(!u){$("LS").style.display="flex";$("AP").style.display="none";return}
