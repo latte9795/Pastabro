@@ -201,12 +201,17 @@
     </div>
     <div class="setA" id="sA">
       <div class="seT">접근 허용 이메일</div>
-      <div class="seD">이 이메일만 로그인할 수 있습니다</div>
+      <div class="seD">관리자 외 추가 직원만 등록 (관리자는 항상 접속 가능)</div>
       <div id="eL"></div>
       <div class="seR">
         <input type="email" class="fi" id="nE" placeholder="이메일 입력" style="flex:1" />
         <button class="bp" id="aEB" style="width:auto;padding:11px 20px;font-size:13px">추가</button>
       </div>
+      <div style="height:1px;background:var(--border);margin:24px 0"></div>
+      <div class="seT">데이터 백업</div>
+      <div class="seD">전체 손님 데이터를 CSV 파일로 다운로드 (엑셀에서 열기 가능)</div>
+      <button class="bp" id="bkSimple" style="margin-bottom:8px;background:#2d6a4f">📋 손님 목록 + 잔액 백업</button>
+      <button class="bp" id="bkFull" style="background:#1a6b3c">📦 전체 거래 내역 백업</button>
     </div>
     <button class="fab" id="fab">+</button>
   </div>
@@ -454,6 +459,56 @@ function renE(){const c=$("eL");c.innerHTML="";al.forEach((em,i)=>{const d=docum
 $("aEB").addEventListener("click",()=>{const em=$("nE").value.trim().toLowerCase();if(!em||!em.includes("@")){toast("올바른 이메일 입력");return}if(al.includes(em)){toast("이미 등록됨");return}al.push(em);savE();$("nE").value=""});
 window.rmE=function(i){if(al.length<=1){toast("최소 1명 필요");return}if(!confirm(al[i]+" 삭제?"))return;al.splice(i,1);savE()};
 function savE(){db.collection("settings").doc("allowed_emails").set({list:al}).then(()=>{renE();toast("저장 ✓")})}
+
+// PWA
+// Backup functions
+function downloadCSV(filename,content){
+  // BOM for Excel Korean support
+  const blob=new Blob(["\uFEFF"+content],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=filename;a.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvEscape(v){
+  if(v==null)return "";
+  const s=String(v);
+  if(s.includes(",")||s.includes('"')||s.includes("\n"))return '"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+
+$("bkSimple").addEventListener("click",()=>{
+  if(allC.length===0){toast("백업할 손님이 없습니다");return}
+  let csv="이름,연락처,메모,잔액\n";
+  allC.forEach(c=>{
+    csv+=[csvEscape(c.name),csvEscape(c.phone||""),csvEscape(c.memo||""),(c.balance||0)].join(",")+"\n";
+  });
+  const today=new Date().toISOString().slice(0,10);
+  downloadCSV("pastabro_손님목록_"+today+".csv",csv);
+  toast("백업 다운로드 완료 ✓");
+});
+
+$("bkFull").addEventListener("click",async()=>{
+  if(allC.length===0){toast("백업할 손님이 없습니다");return}
+  toast("백업 생성 중...");
+  let csv="손님이름,연락처,메모,거래일시,거래유형,금액,거래후잔액,거래메모,처리자\n";
+  for(const c of allC){
+    const snap=await db.collection("customers").doc(c.id).collection("transactions").orderBy("createdAt","asc").get();
+    if(snap.empty){
+      csv+=[csvEscape(c.name),csvEscape(c.phone||""),csvEscape(c.memo||""),"","현재잔액","",(c.balance||0),"",""].join(",")+"\n";
+    }else{
+      snap.forEach(d=>{
+        const t=d.data();
+        const dt=t.createdAt?new Date(t.createdAt.toDate()).toLocaleString("ko-KR"):"";
+        csv+=[csvEscape(c.name),csvEscape(c.phone||""),csvEscape(c.memo||""),dt,t.delta>0?"충전":"사용",t.delta,t.balanceAfter||0,csvEscape(t.memo||""),csvEscape(t.createdBy||"")].join(",")+"\n";
+      });
+    }
+  }
+  const today=new Date().toISOString().slice(0,10);
+  downloadCSV("pastabro_전체백업_"+today+".csv",csv);
+  toast("전체 백업 완료 ✓");
+});
 
 // PWA
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
