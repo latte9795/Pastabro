@@ -420,15 +420,18 @@ function loadRecent(){
     // Need customer names — fetch unique
     const ids=[...new Set(rows.map(r=>r.custId))];
     const nameMap={};
-    Promise.all(ids.map(id=>db.collection("customers").doc(id).get().then(d=>{nameMap[id]=d.exists?(d.data().name||"?"):"(삭제됨)"}))).then(()=>{
+    Promise.all(ids.map(id=>db.collection("customers").doc(id).get().then(d=>{nameMap[id]=d.exists?(d.data().name||"?"):null}))).then(()=>{
       c.innerHTML="";
       rows.forEach(r=>{
         const t=r.t,p=t.delta>0;
         const dt=t.createdAt?new Date(t.createdAt.toDate()):null;
         const dts=dt?`${String(dt.getMonth()+1).padStart(2,"0")}/${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`:"";
+        const isDel=nameMap[r.custId]===null;
+        const nameHtml=isDel?'<span style="text-decoration:line-through;color:#666;font-weight:600">(삭제된 손님)</span>':(nameMap[r.custId]||"?");
         const div=document.createElement("div");div.className="ri";
-        div.innerHTML=`<div style="flex:1;min-width:0"><div class="rd">${dts}</div><div class="rn">${nameMap[r.custId]||"?"}</div><div class="rb">잔액 ₩${(t.balanceAfter||0).toLocaleString()}</div></div><div style="display:flex;align-items:center;gap:8px"><div class="ra ${p?'plus':'minus'}">${p?'+':''}₩${t.delta.toLocaleString()}</div><button class="txMenu" onclick="event.stopPropagation();toggleRMenu('${r.custId}_${r.txId}',event)">⋮</button><div class="txPop" id="rpop_${r.custId}_${r.txId}"><button onclick="openCustFromRecent('${r.custId}')">손님 페이지 열기</button></div></div>`;
-        div.addEventListener("click",()=>openCustFromRecent(r.custId));
+        div.innerHTML=`<div style="flex:1;min-width:0"><div class="rd">${dts}</div><div class="rn">${nameHtml}</div><div class="rb">잔액 ₩${(t.balanceAfter||0).toLocaleString()}</div></div><div style="display:flex;align-items:center;gap:8px"><div class="ra ${p?'plus':'minus'}">${p?'+':''}₩${t.delta.toLocaleString()}</div>${isDel?'':`<button class="txMenu" onclick="event.stopPropagation();toggleRMenu('${r.custId}_${r.txId}',event)">⋮</button><div class="txPop" id="rpop_${r.custId}_${r.txId}"><button onclick="openCustFromRecent('${r.custId}')">손님 페이지 열기</button></div>`}</div>`;
+        if(!isDel)div.addEventListener("click",()=>openCustFromRecent(r.custId));
+        else div.style.cursor="default";
         c.appendChild(div);
       });
     });
@@ -713,14 +716,21 @@ $("delC").addEventListener("click",()=>{
   const name=$("dN").textContent;
   const typed=prompt("정말 삭제하려면 손님 이름을 정확히 입력하세요:\n\n"+name);
   if(typed!==name){toast("이름이 일치하지 않습니다");return}
-  // 백업 후 삭제
+  // 백업 후 손님 + 거래 모두 삭제
   const ref=db.collection("customers").doc(cId);
+  let txDocs=[];
   ref.get().then(doc=>{
     const data=doc.data();
     return ref.collection("transactions").orderBy("createdAt","desc").get().then(snap=>{
-      const txs=[];snap.forEach(d=>txs.push(d.data()));
+      const txs=[];snap.forEach(d=>{txs.push(d.data());txDocs.push(d.ref)});
       return db.collection("deleted_customers").add({...data,transactions:txs,deletedAt:firebase.firestore.FieldValue.serverTimestamp(),deletedBy:au.currentUser.email});
     });
+  }).then(()=>{
+    // 거래 서브컬렉션 batch 삭제 (500개 단위)
+    const chunks=[];for(let i=0;i<txDocs.length;i+=400)chunks.push(txDocs.slice(i,i+400));
+    return chunks.reduce((p,chunk)=>p.then(()=>{
+      const b=db.batch();chunk.forEach(r=>b.delete(r));return b.commit();
+    }),Promise.resolve());
   }).then(()=>ref.delete()).then(()=>{toast("삭제 완료 (백업 저장됨)");closeD()});
 });
 
