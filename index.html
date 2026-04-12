@@ -114,6 +114,22 @@
 
     .tx{display:none;background:var(--bg);border-radius:var(--R);padding:18px;margin-bottom:20px}
     .tx.show{display:block}
+    .hi{position:relative}
+    .txMenu{position:absolute;top:8px;right:8px;background:none;border:none;font-size:18px;color:var(--sub);cursor:pointer;padding:4px 8px;line-height:1}
+    .txMenu:hover{color:var(--text)}
+    .txPop{position:absolute;top:32px;right:8px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:50;min-width:120px;overflow:hidden;display:none}
+    .txPop.show{display:block}
+    .txPop button{display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;font-size:13px;color:var(--text);cursor:pointer;font-family:var(--sans)}
+    .txPop button:hover{background:var(--blight)}
+    .txPop button.del{color:var(--red);border-top:1px solid var(--border)}
+    #eOv{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000}
+    #eOv.show{display:flex}
+    #eOv .em{background:var(--card);border-radius:16px;padding:22px;width:90%;max-width:380px}
+    #eOv h3{font-size:16px;margin-bottom:16px}
+    #eOv input,#eOv textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-family:var(--sans);font-size:14px;margin-bottom:10px;background:var(--warm)}
+    #eOv .ebr{display:flex;gap:8px;margin-top:6px}
+    #eOv .ebr button{flex:1;padding:11px;border-radius:10px;border:1px solid var(--border);background:var(--card);font-family:var(--sans);font-size:13px;cursor:pointer}
+    #eOv .ebr button.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
     .txt{font-size:15px;font-weight:700;margin-bottom:14px}
 
     .aq{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
@@ -144,6 +160,19 @@
 
     /* ── Settings ── */
     .setA{display:none;padding:16px}.setA.show{display:block}
+    .stBtn{padding:8px 14px;font-size:12px;border:1px solid var(--border);border-radius:999px;background:var(--card);cursor:pointer;font-family:var(--sans);color:var(--sub)}
+    .stBtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .stCard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+    .stCard .stl{font-size:12px;color:var(--sub)}
+    .stCard .stv{font-size:17px;font-weight:600;font-family:var(--serif)}
+    .ri{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;position:relative}
+    .ri:hover{background:var(--blight)}
+    .ri .rd{font-size:11px;color:var(--muted)}
+    .ri .rn{font-size:14px;font-weight:500;margin:2px 0}
+    .ri .rb{font-size:11px;color:var(--sub)}
+    .ri .ra{font-size:14px;font-weight:600;font-family:var(--serif)}
+    .ri .ra.plus{color:var(--green)}
+    .ri .ra.minus{color:var(--red)}
     .seT{font-size:15px;font-weight:600;margin-bottom:6px}
     .seD{font-size:12px;color:var(--sub);margin-bottom:14px}
     .seE{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--warm);border-radius:12px;margin-bottom:6px;font-size:13px}
@@ -183,13 +212,14 @@
     <div class="hdr">
       <div class="ht">
         <div class="hb">pasta bro</div>
-        <div class="hr"><span class="hn" id="uN"></span><button class="ho" id="loBtn">로그아웃</button></div>
+        <div class="hr"><span class="hn" id="uN"></span><button class="ho" id="setBtn" style="margin-right:4px" title="설정">⚙️</button><button class="ho" id="loBtn">로그아웃</button></div>
       </div>
       <div class="sw"><span class="sic">🔍</span><input type="text" class="si" id="sI" placeholder="손님 이름 · 연락처 검색" autocomplete="off" /></div>
     </div>
     <div class="tabs">
       <button class="tab on" data-t="list">손님 목록</button>
-      <button class="tab" data-t="set">설정</button>
+      <button class="tab" data-t="recent">최근 이용내역</button>
+      <button class="tab" data-t="stat">통계</button>
     </div>
     <div class="stats" id="stW">
       <div class="stat"><div class="stat-l">총 손님</div><div class="stat-v" id="sT">0</div></div>
@@ -207,9 +237,30 @@
         <input type="email" class="fi" id="nE" placeholder="이메일 입력" style="flex:1" />
         <button class="bp" id="aEB" style="width:auto;padding:11px 20px;font-size:13px">추가</button>
       </div>
-      <div style="height:1px;background:var(--border);margin:24px 0"></div>
+    </div>
+
+    <div class="setA" id="rA">
+      <div id="rL" style="padding:4px 0"><div style="font-size:13px;color:var(--muted);padding:14px 0;text-align:center">불러오는 중...</div></div>
+    </div>
+
+    <div class="setA" id="stA">
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="stBtn on" data-p="day">오늘</button>
+        <button class="stBtn" data-p="week">이번주</button>
+        <button class="stBtn" data-p="lweek">지난주</button>
+        <button class="stBtn" data-p="month">이번달</button>
+        <button class="stBtn" data-p="custom">직접선택</button>
+      </div>
+      <div id="stRange" style="display:none;gap:6px;margin-bottom:14px">
+        <input type="date" id="stFrom" class="fi" style="flex:1" />
+        <input type="date" id="stTo" class="fi" style="flex:1" />
+        <button class="bp" id="stApply" style="width:auto;padding:10px 14px">적용</button>
+      </div>
+      <div id="stOut" style="margin-bottom:18px"><div style="font-size:13px;color:var(--muted);text-align:center;padding:14px 0">계산 중...</div></div>
+      <button class="bp" id="stCsv" style="margin-bottom:18px;background:#1a6b3c">📊 통계 기간 CSV 다운로드</button>
+      <div style="height:1px;background:var(--border);margin:18px 0"></div>
       <div class="seT">데이터 백업</div>
-      <div class="seD">전체 손님 데이터를 CSV 파일로 다운로드 (엑셀에서 열기 가능)</div>
+      <div class="seD">전체 손님 데이터를 CSV 파일로 다운로드</div>
       <button class="bp" id="bkSimple" style="margin-bottom:8px;background:#2d6a4f">📋 손님 목록 + 잔액 백업</button>
       <button class="bp" id="bkFull" style="background:#1a6b3c">📦 전체 거래 내역 백업</button>
     </div>
@@ -258,7 +309,7 @@
             <button class="aqb" data-v="50000">5만</button>
             <button class="aqb" data-v="100000">10만</button>
           </div>
-          <input type="number" class="fi" id="tA" placeholder="직접 입력" inputmode="numeric" />
+          <input type="number" class="fi" id="tA" placeholder="직접 입력 (음수 가능)" inputmode="text" />
         </div>
         <div class="fg"><label class="fl">메모</label><input type="text" class="fi" id="tM" placeholder="파스타 2인분 등" /></div>
         <div class="fg"><label class="fl">날짜 (비워두면 현재 시간)</label><input type="datetime-local" class="fi" id="tD" /></div>
@@ -330,7 +381,7 @@ au.onAuthStateChanged(u=>{
     if(!isAdmin&&!al.includes(email)){$("lErr").textContent="접근 권한이 없습니다 ("+email+")";$("lErr").style.display="block";au.signOut();return}
     $("LS").style.display="none";$("AP").style.display="block";
     $("uN").textContent=u.displayName||email;
-    document.querySelector('[data-t="set"]').style.display=isAdmin?"block":"none";
+    document.getElementById('setBtn').style.display=isAdmin?"inline-block":"none";
     loadC();if(isAdmin)loadE();
   });
 });
@@ -341,11 +392,123 @@ function toast(m){$("tst").textContent=m;$("tst").classList.add("show");setTimeo
 document.querySelectorAll(".tab").forEach(t=>{t.addEventListener("click",()=>{
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));t.classList.add("on");
   const v=t.dataset.t;
+  $("sA").className="setA";
   $("lA").style.display=v==="list"?"block":"none";
-  $("sA").className=v==="set"?"setA show":"setA";
+  $("rA").className=v==="recent"?"setA show":"setA";
+  $("stA").className=v==="stat"?"setA show":"setA";
   $("stW").style.display=v==="list"?"flex":"none";
   $("fab").style.display=v==="list"?"flex":"none";
+  if(v==="recent")loadRecent();
+  if(v==="stat")computeStats();
 })});
+$("setBtn").addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
+  $("lA").style.display="none";$("rA").className="setA";$("stA").className="setA";
+  $("stW").style.display="none";$("fab").style.display="none";
+  $("sA").className="setA show";
+});
+
+// ── Recent transactions tab ──
+function loadRecent(){
+  const c=$("rL");c.innerHTML='<div style="font-size:13px;color:var(--muted);padding:14px 0;text-align:center">불러오는 중...</div>';
+  db.collectionGroup("transactions").orderBy("createdAt","desc").limit(50).get().then(snap=>{
+    if(snap.empty){c.innerHTML='<div style="font-size:13px;color:var(--muted);padding:14px 0;text-align:center">거래 내역이 없습니다</div>';return}
+    const rows=[];snap.forEach(d=>{
+      const t=d.data();const custRef=d.ref.parent.parent;
+      rows.push({t,custId:custRef.id,txId:d.id});
+    });
+    // Need customer names — fetch unique
+    const ids=[...new Set(rows.map(r=>r.custId))];
+    const nameMap={};
+    Promise.all(ids.map(id=>db.collection("customers").doc(id).get().then(d=>{nameMap[id]=d.exists?(d.data().name||"?"):"(삭제됨)"}))).then(()=>{
+      c.innerHTML="";
+      rows.forEach(r=>{
+        const t=r.t,p=t.delta>0;
+        const dt=t.createdAt?new Date(t.createdAt.toDate()):null;
+        const dts=dt?`${String(dt.getMonth()+1).padStart(2,"0")}/${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`:"";
+        const div=document.createElement("div");div.className="ri";
+        div.innerHTML=`<div style="flex:1;min-width:0"><div class="rd">${dts}</div><div class="rn">${nameMap[r.custId]||"?"}</div><div class="rb">잔액 ₩${(t.balanceAfter||0).toLocaleString()}</div></div><div style="display:flex;align-items:center;gap:8px"><div class="ra ${p?'plus':'minus'}">${p?'+':''}₩${t.delta.toLocaleString()}</div><button class="txMenu" onclick="event.stopPropagation();toggleRMenu('${r.custId}_${r.txId}',event)">⋮</button><div class="txPop" id="rpop_${r.custId}_${r.txId}"><button onclick="openCustFromRecent('${r.custId}')">손님 페이지 열기</button></div></div>`;
+        div.addEventListener("click",()=>openCustFromRecent(r.custId));
+        c.appendChild(div);
+      });
+    });
+  }).catch(e=>{c.innerHTML='<div style="font-size:12px;color:var(--red);padding:14px 0;text-align:center">불러오기 실패: '+e.message+'<br>(Firestore에서 collectionGroup 인덱스가 필요할 수 있습니다)</div>'});
+}
+window.toggleRMenu=function(k,e){e.stopPropagation();document.querySelectorAll('.txPop.show').forEach(p=>{if(p.id!=='rpop_'+k)p.classList.remove('show')});$('rpop_'+k).classList.toggle('show')};
+window.openCustFromRecent=function(custId){openD(custId)};
+
+// ── Stats tab ──
+const STAT_CUTOFF=new Date("2026-04-12T00:00:00");
+let statPeriod="day",statCustomFrom=null,statCustomTo=null;
+document.querySelectorAll(".stBtn").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".stBtn").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+  statPeriod=b.dataset.p;
+  $("stRange").style.display=statPeriod==="custom"?"flex":"none";
+  if(statPeriod!=="custom")computeStats();
+}));
+$("stApply").addEventListener("click",()=>{
+  if(!$("stFrom").value||!$("stTo").value){toast("기간을 선택하세요");return}
+  statCustomFrom=new Date($("stFrom").value+"T00:00:00");
+  statCustomTo=new Date($("stTo").value+"T23:59:59");
+  computeStats();
+});
+
+function getStatRange(){
+  const now=new Date();
+  if(statPeriod==="day"){const s=new Date(now);s.setHours(0,0,0,0);const e=new Date(now);e.setHours(23,59,59,999);return[s,e]}
+  if(statPeriod==="week"||statPeriod==="lweek"){
+    const d=new Date(now);const day=d.getDay();const diff=(day===0?6:day-1);
+    const mon=new Date(d);mon.setDate(d.getDate()-diff);mon.setHours(0,0,0,0);
+    if(statPeriod==="lweek")mon.setDate(mon.getDate()-7);
+    const sun=new Date(mon);sun.setDate(mon.getDate()+6);sun.setHours(23,59,59,999);
+    return[mon,sun];
+  }
+  if(statPeriod==="month"){const s=new Date(now.getFullYear(),now.getMonth(),1);const e=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);return[s,e]}
+  if(statPeriod==="custom"&&statCustomFrom&&statCustomTo)return[statCustomFrom,statCustomTo];
+  return[null,null];
+}
+
+let lastStatRows=[];
+function computeStats(){
+  const[from,to]=getStatRange();
+  if(!from){$("stOut").innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:14px 0">기간을 선택하세요</div>';return}
+  const eff=from<STAT_CUTOFF?STAT_CUTOFF:from;
+  $("stOut").innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:14px 0">계산 중...</div>';
+  db.collectionGroup("transactions").where("createdAt",">=",firebase.firestore.Timestamp.fromDate(eff)).where("createdAt","<=",firebase.firestore.Timestamp.fromDate(to)).get().then(snap=>{
+    let dep=0,use=0,cnt=0;const rows=[];
+    snap.forEach(d=>{
+      const t=d.data();if(!t.createdAt)return;
+      cnt++;
+      if(t.delta>0)dep+=t.delta;else use+=t.delta;
+      rows.push({t,custId:d.ref.parent.parent.id});
+    });
+    lastStatRows=rows;
+    db.collection("customers").get().then(cs=>{
+      let totalBal=0;cs.forEach(c=>totalBal+=(c.data().balance||0));
+      const fmt=n=>"₩"+n.toLocaleString();
+      const fd=eff.toLocaleDateString("ko-KR"),td=to.toLocaleDateString("ko-KR");
+      $("stOut").innerHTML=`
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px">${fd} ~ ${td}${from<STAT_CUTOFF?' (2026-04-12 이후)':''}</div>
+        <div class="stCard"><div class="stl">충전 합계</div><div class="stv" style="color:var(--green)">${fmt(dep)}</div></div>
+        <div class="stCard"><div class="stl">사용 합계</div><div class="stv" style="color:var(--red)">${fmt(use)}</div></div>
+        <div class="stCard"><div class="stl">순증감</div><div class="stv">${fmt(dep+use)}</div></div>
+        <div class="stCard"><div class="stl">거래 건수</div><div class="stv">${cnt}건</div></div>
+        <div class="stCard"><div class="stl">현재 총 잔액</div><div class="stv" style="color:var(--green)">${fmt(totalBal)}</div></div>`;
+    });
+  }).catch(e=>{$("stOut").innerHTML='<div style="font-size:12px;color:var(--red);text-align:center;padding:14px 0">집계 실패: '+e.message+'</div>'});
+}
+$("stCsv").addEventListener("click",()=>{
+  if(!lastStatRows.length){toast("먼저 기간을 조회하세요");return}
+  const ids=[...new Set(lastStatRows.map(r=>r.custId))];const nm={};
+  Promise.all(ids.map(id=>db.collection("customers").doc(id).get().then(d=>{nm[id]=d.exists?(d.data().name||"?"):"(삭제됨)"}))).then(()=>{
+    let csv="\uFEFF거래일시,손님이름,거래유형,금액,거래후잔액,메모,처리자\n";
+    lastStatRows.forEach(r=>{
+      const t=r.t,dt=t.createdAt?new Date(t.createdAt.toDate()).toLocaleString("ko-KR"):"";
+      csv+=[dt,csvEscape(nm[r.custId]||""),t.delta>0?"충전":"사용",t.delta,t.balanceAfter||0,csvEscape(t.memo||""),csvEscape(t.createdBy||"")].join(",")+"\n";
+    });
+    downloadCSV("pastabro_stats_"+new Date().toISOString().slice(0,10)+".csv",csv);
+  });
+});
 
 // Customers
 function loadC(){
@@ -438,7 +601,7 @@ $("rcF").addEventListener("change",e=>{
 });
 
 $("tS").addEventListener("click",()=>{
-  const amt=parseInt($("tA").value);if(!amt||amt<=0){toast("금액을 입력하세요");return}
+  const amt=parseInt($("tA").value);if(!amt||amt===0||isNaN(amt)){toast("금액을 입력하세요");return}
   const sig=getSig(),memo=$("tM").value.trim(),delta=cTy==="deposit"?amt:-amt;
   const customDate=$("tD").value;
   const ts=customDate?firebase.firestore.Timestamp.fromDate(new Date(customDate)):firebase.firestore.FieldValue.serverTimestamp();
@@ -469,6 +632,7 @@ function loadH(id){
     s.forEach(d=>{
       const t=d.data(),div=document.createElement("div");div.className="hi";
       const p=t.delta>0,dt=t.createdAt?new Date(t.createdAt.toDate()).toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"";
+      const editedMark=t.editedAt?'<span style="font-size:10px;color:var(--muted);margin-left:4px">(수정됨)</span>':'';
       let attachments="";
       if(t.signature)attachments+='<img class="hsg" src="'+t.signature+'" onclick="showSig(this.src)" title="서명 보기" />';
       if(t.receipt){
@@ -479,11 +643,71 @@ function loadH(id){
           attachments+='<a href="'+t.receipt+'" download="'+(t.receiptName||"receipt")+'" style="display:inline-block;margin-left:4px;padding:2px 6px;background:var(--warm);border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--sub);text-decoration:none" title="영수증 다운로드">📎 영수증</a>';
         }
       }
-      div.innerHTML=`<div class="hl"><div class="hm">${t.memo||(p?"충전":"사용")}</div><div class="hd">${dt}</div><div class="hby">${t.createdBy||""}</div>${attachments}</div><div class="hr2"><div class="ha ${p?'plus':'minus'}">${p?'+':''}₩${t.delta.toLocaleString()}</div><div class="haf">잔액 ₩${(t.balanceAfter||0).toLocaleString()}</div></div>`;
+      const menuHtml=isAdmin?`<button class="txMenu" onclick="toggleTxMenu('${d.id}',event)">⋮</button><div class="txPop" id="pop_${d.id}"><button onclick="openEdit('${d.id}')">수정</button><button class="del" onclick="delTx('${d.id}')">삭제</button></div>`:'';
+      div.innerHTML=`<div class="hl"><div class="hm">${t.memo||(p?"충전":"사용")}${editedMark}</div><div class="hd">${dt}</div><div class="hby">${t.createdBy||""}</div>${attachments}</div><div class="hr2"><div class="ha ${p?'plus':'minus'}">${p?'+':''}₩${t.delta.toLocaleString()}</div><div class="haf">잔액 ₩${(t.balanceAfter||0).toLocaleString()}</div></div>${menuHtml}`;
       h.appendChild(div);
     });
   });
 }
+
+window.toggleTxMenu=function(id,e){e.stopPropagation();document.querySelectorAll('.txPop.show').forEach(p=>{if(p.id!=='pop_'+id)p.classList.remove('show')});$('pop_'+id).classList.toggle('show')};
+document.addEventListener('click',()=>document.querySelectorAll('.txPop.show').forEach(p=>p.classList.remove('show')));
+
+let editTxId=null;
+window.openEdit=function(txId){
+  editTxId=txId;
+  const ref=db.collection("customers").doc(cId).collection("transactions").doc(txId);
+  ref.get().then(doc=>{
+    const t=doc.data();
+    $("eA").value=t.delta;
+    if(t.createdAt){
+      const d=new Date(t.createdAt.toDate()),pad=n=>String(n).padStart(2,'0');
+      $("eD").value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }else $("eD").value="";
+    $("eMemo").value=t.memo||"";
+    $("eR").value="";
+    $("eOv").classList.add("show");
+  });
+};
+window.closeEdit=function(){$("eOv").classList.remove("show");editTxId=null};
+
+function recalcBalances(custId){
+  const cref=db.collection("customers").doc(custId);
+  return cref.collection("transactions").orderBy("createdAt","asc").get().then(snap=>{
+    let bal=0;const batch=db.batch();
+    snap.forEach(d=>{
+      const t=d.data();bal+=(t.delta||0);
+      batch.update(d.ref,{balanceAfter:bal});
+    });
+    batch.update(cref,{balance:bal});
+    return batch.commit();
+  });
+}
+
+function readFileB64(file){
+  return new Promise(res=>{const r=new FileReader();r.onload=()=>res({data:r.result,name:file.name,type:file.type});r.readAsDataURL(file)});
+}
+
+window.saveEdit=function(){
+  if(!editTxId)return;
+  const newDelta=parseInt($("eA").value);
+  if(isNaN(newDelta)||newDelta===0){toast("금액을 입력하세요");return}
+  const newMemo=$("eMemo").value.trim();
+  const newDateStr=$("eD").value;
+  const newTs=newDateStr?firebase.firestore.Timestamp.fromDate(new Date(newDateStr)):null;
+  const ref=db.collection("customers").doc(cId).collection("transactions").doc(editTxId);
+  const upd={delta:newDelta,amount:Math.abs(newDelta),type:newDelta>0?"deposit":"use",memo:newMemo,editedAt:firebase.firestore.FieldValue.serverTimestamp(),editedBy:au.currentUser.email};
+  if(newTs)upd.createdAt=newTs;
+  const file=$("eR").files[0];
+  const proceed=file?readFileB64(file).then(r=>{upd.receipt=r.data;upd.receiptName=r.name;upd.receiptType=r.type}):Promise.resolve();
+  proceed.then(()=>ref.update(upd)).then(()=>recalcBalances(cId)).then(()=>{toast("수정 완료 ✓");closeEdit();loadH(cId);loadC()});
+};
+
+window.delTx=function(txId){
+  if(!confirm("이 거래를 삭제하시겠습니까?\n잔액이 자동 재계산됩니다."))return;
+  const ref=db.collection("customers").doc(cId).collection("transactions").doc(txId);
+  ref.delete().then(()=>recalcBalances(cId)).then(()=>{toast("삭제 완료 ✓");loadH(cId);loadC()});
+};
 
 $("delC").addEventListener("click",()=>{
   const name=$("dN").textContent;
@@ -577,5 +801,23 @@ $("bkFull").addEventListener("click",async()=>{
 // PWA
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 </script>
+
+<div id="eOv">
+  <div class="em">
+    <h3>거래 수정</h3>
+    <label style="font-size:11px;color:var(--sub)">금액 (음수 가능)</label>
+    <input type="number" id="eA" placeholder="금액" />
+    <label style="font-size:11px;color:var(--sub)">날짜/시간</label>
+    <input type="datetime-local" id="eD" />
+    <label style="font-size:11px;color:var(--sub)">메모</label>
+    <textarea id="eMemo" rows="2" placeholder="메모"></textarea>
+    <label style="font-size:11px;color:var(--sub)">영수증 (교체 시 새 파일 선택)</label>
+    <input type="file" id="eR" accept="image/*,application/pdf" />
+    <div class="ebr">
+      <button onclick="closeEdit()">취소</button>
+      <button class="pri" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
