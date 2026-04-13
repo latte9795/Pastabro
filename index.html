@@ -239,7 +239,7 @@
       </div>
       <div style="height:1px;background:var(--border);margin:24px 0"></div>
       <div class="seT">거래 정리</div>
-      <div class="seD">삭제된 손님의 거래(고아 거래)를 찾아 정리합니다. 통계/최근 내역에서 사라집니다.</div>
+      <div class="seD">삭제된 손님의 거래를 찾아 정리합니다. 통계/최근 내역에서 사라집니다.</div>
       <button class="bp" id="cleanBtn" style="background:#8b2020">🧹 거래 정리</button>
     </div>
 
@@ -313,7 +313,7 @@
             <button class="aqb" data-v="50000">5만</button>
             <button class="aqb" data-v="100000">10만</button>
           </div>
-          <input type="number" class="fi" id="tA" placeholder="직접 입력 (음수 가능)" inputmode="text" />
+          <input type="number" class="fi" id="tA" placeholder="직접 입력" inputmode="numeric" min="1" />
         </div>
         <div class="fg"><label class="fl">메모</label><input type="text" class="fi" id="tM" placeholder="파스타 2인분 등" /></div>
         <div class="fg"><label class="fl">날짜 (비워두면 현재 시간)</label><input type="datetime-local" class="fi" id="tD" /></div>
@@ -608,7 +608,7 @@ $("rcF").addEventListener("change",e=>{
 });
 
 $("tS").addEventListener("click",()=>{
-  const amt=parseInt($("tA").value);if(!amt||amt===0||isNaN(amt)){toast("금액을 입력하세요");return}
+  const amt=parseInt($("tA").value);if(!amt||amt<=0||isNaN(amt)){toast("양수 금액을 입력하세요");return}
   const sig=getSig(),memo=$("tM").value.trim(),delta=cTy==="deposit"?amt:-amt;
   const customDate=$("tD").value;
   const ts=customDate?firebase.firestore.Timestamp.fromDate(new Date(customDate)):firebase.firestore.FieldValue.serverTimestamp();
@@ -660,13 +660,14 @@ function loadH(id){
 window.toggleTxMenu=function(id,e){e.stopPropagation();document.querySelectorAll('.txPop.show').forEach(p=>{if(p.id!=='pop_'+id)p.classList.remove('show')});$('pop_'+id).classList.toggle('show')};
 document.addEventListener('click',()=>document.querySelectorAll('.txPop.show').forEach(p=>p.classList.remove('show')));
 
-let editTxId=null;
+let editTxId=null,editTxSign=1;
 window.openEdit=function(txId){
   editTxId=txId;
   const ref=db.collection("customers").doc(cId).collection("transactions").doc(txId);
   ref.get().then(doc=>{
     const t=doc.data();
-    $("eA").value=t.delta;
+    editTxSign=t.delta>=0?1:-1;
+    $("eA").value=Math.abs(t.delta);
     if(t.createdAt){
       const d=new Date(t.createdAt.toDate()),pad=n=>String(n).padStart(2,'0');
       $("eD").value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -697,13 +698,14 @@ function readFileB64(file){
 
 window.saveEdit=function(){
   if(!editTxId)return;
-  const newDelta=parseInt($("eA").value);
-  if(isNaN(newDelta)||newDelta===0){toast("금액을 입력하세요");return}
+  const inputAmt=parseInt($("eA").value);
+  if(isNaN(inputAmt)||inputAmt<=0){toast("양수 금액을 입력하세요");return}
+  const newDelta=inputAmt*editTxSign;
   const newMemo=$("eMemo").value.trim();
   const newDateStr=$("eD").value;
   const newTs=newDateStr?firebase.firestore.Timestamp.fromDate(new Date(newDateStr)):null;
   const ref=db.collection("customers").doc(cId).collection("transactions").doc(editTxId);
-  const upd={delta:newDelta,amount:Math.abs(newDelta),type:newDelta>0?"deposit":"use",memo:newMemo,editedAt:firebase.firestore.FieldValue.serverTimestamp(),editedBy:au.currentUser.email};
+  const upd={delta:newDelta,amount:inputAmt,type:editTxSign>0?"deposit":"use",memo:newMemo,editedAt:firebase.firestore.FieldValue.serverTimestamp(),editedBy:au.currentUser.email};
   if(newTs)upd.createdAt=newTs;
   const file=$("eR").files[0];
   const proceed=file?readFileB64(file).then(r=>{upd.receipt=r.data;upd.receiptName=r.name;upd.receiptType=r.type}):Promise.resolve();
@@ -812,7 +814,7 @@ $("bkFull").addEventListener("click",async()=>{
   toast("전체 백업 완료 ✓");
 });
 
-// 거래 정리 (고아 거래 삭제)
+// 거래 정리 (삭제된 손님의 거래 삭제)
 $("cleanBtn").addEventListener("click",async()=>{
   if(!confirm("삭제된 손님의 거래를 찾습니다.\n계속하시겠습니까?"))return;
   $("cleanBtn").disabled=true;$("cleanBtn").textContent="🔍 검색 중...";
@@ -821,23 +823,23 @@ $("cleanBtn").addEventListener("click",async()=>{
   // 2) 살아있는 손님 ID 집합
   const aliveCusts=await db.collection("customers").get();
   const aliveIds=new Set();aliveCusts.forEach(d=>aliveIds.add(d.id));
-  // 3) 고아 거래 골라내기
-  const orphans=[];
+  // 3) 삭제된 손님의 거래 골라내기
+  const targets=[];
   allTx.forEach(d=>{
     const parentId=d.ref.parent.parent.id;
-    if(!aliveIds.has(parentId))orphans.push(d.ref);
+    if(!aliveIds.has(parentId))targets.push(d.ref);
   });
   $("cleanBtn").disabled=false;$("cleanBtn").textContent="🧹 거래 정리";
-  if(orphans.length===0){toast("고아 거래가 없습니다 ✓");return}
-  if(!confirm(`고아 거래 ${orphans.length}건을 발견했습니다.\n\n삭제하시겠습니까? (되돌릴 수 없음)`))return;
+  if(targets.length===0){toast("정리할 거래가 없습니다 ✓");return}
+  if(!confirm(`삭제된 손님의 거래 ${targets.length}건을 발견했습니다.\n\n삭제하시겠습니까? (되돌릴 수 없음)`))return;
   $("cleanBtn").disabled=true;$("cleanBtn").textContent="🗑️ 삭제 중...";
   // 4) batch 삭제 (400개씩 청크)
-  const chunks=[];for(let i=0;i<orphans.length;i+=400)chunks.push(orphans.slice(i,i+400));
+  const chunks=[];for(let i=0;i<targets.length;i+=400)chunks.push(targets.slice(i,i+400));
   for(const chunk of chunks){
     const b=db.batch();chunk.forEach(r=>b.delete(r));await b.commit();
   }
   $("cleanBtn").disabled=false;$("cleanBtn").textContent="🧹 거래 정리";
-  toast(`정리 완료: ${orphans.length}건 삭제 ✓`);
+  toast(`정리 완료: ${targets.length}건 삭제 ✓`);
 });
 
 // PWA
@@ -847,7 +849,7 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
 <div id="eOv">
   <div class="em">
     <h3>거래 수정</h3>
-    <label style="font-size:11px;color:var(--sub)">금액 (음수 가능)</label>
+    <label style="font-size:11px;color:var(--sub)">금액 (양수, 충전/사용 종류는 변경 불가)</label>
     <input type="number" id="eA" placeholder="금액" />
     <label style="font-size:11px;color:var(--sub)">날짜/시간</label>
     <input type="datetime-local" id="eD" />
