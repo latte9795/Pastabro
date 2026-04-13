@@ -355,6 +355,8 @@ const DE=[...ADMINS];
 
 firebase.initializeApp(FC);
 const au=firebase.auth(),db=firebase.firestore(),gP=new firebase.auth.GoogleAuthProvider();
+au.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+gP.setCustomParameters({prompt:'select_account'});
 gP.addScope('email');
 gP.addScope('profile');
 const $=id=>document.getElementById(id);
@@ -368,11 +370,38 @@ function getEmail(u){
 }
 
 // Auth
+// iOS 홈화면 PWA 감지 (popup이 막히는 환경)
+const isIOSPWA=(()=>{
+  const ua=navigator.userAgent||"";
+  const isIOS=/iPad|iPhone|iPod/.test(ua);
+  const isStandalone=window.navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
+  return isIOS&&isStandalone;
+})();
+
+// 페이지 로드 시 redirect 결과 처리 (있으면)
+au.getRedirectResult().catch(e=>{
+  if(e&&e.code&&e.code!=="auth/no-auth-event"){
+    $("lErr").textContent="로그인 처리 실패: "+e.message;$("lErr").style.display="block";
+  }
+});
+
 $("gBtn").addEventListener("click",()=>{
   const ua=navigator.userAgent||"";
   const inApp=/KAKAOTALK|Instagram|FBAN|FBAV|NAVER|Line/i.test(ua);
   if(inApp){$("lErr").textContent="카카오/인스타 브라우저에서는 로그인이 안 됩니다. 오른쪽 ⋯ 메뉴에서 '크롬에서 열기'를 눌러주세요.";$("lErr").style.display="block";return}
-  au.signInWithPopup(gP).catch(e=>{$("lErr").textContent="로그인 실패: "+e.message;$("lErr").style.display="block"});
+  // iOS 홈화면 PWA는 popup이 작동 안 함 → redirect 사용
+  if(isIOSPWA){
+    au.signInWithRedirect(gP).catch(e=>{$("lErr").textContent="로그인 실패: "+e.message;$("lErr").style.display="block"});
+    return;
+  }
+  au.signInWithPopup(gP).catch(e=>{
+    // popup 차단 등 실패 시 redirect로 fallback
+    if(e.code==="auth/popup-blocked"||e.code==="auth/popup-closed-by-user"||e.code==="auth/cancelled-popup-request"||e.code==="auth/operation-not-supported-in-this-environment"){
+      au.signInWithRedirect(gP).catch(e2=>{$("lErr").textContent="로그인 실패: "+e2.message;$("lErr").style.display="block"});
+    }else{
+      $("lErr").textContent="로그인 실패: "+e.message;$("lErr").style.display="block";
+    }
+  });
 });
 $("loBtn").addEventListener("click",()=>au.signOut());
 au.onAuthStateChanged(u=>{
