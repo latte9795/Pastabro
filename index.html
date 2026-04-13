@@ -237,6 +237,10 @@
         <input type="email" class="fi" id="nE" placeholder="이메일 입력" style="flex:1" />
         <button class="bp" id="aEB" style="width:auto;padding:11px 20px;font-size:13px">추가</button>
       </div>
+      <div style="height:1px;background:var(--border);margin:24px 0"></div>
+      <div class="seT">거래 정리</div>
+      <div class="seD">삭제된 손님의 거래(고아 거래)를 찾아 정리합니다. 통계/최근 내역에서 사라집니다.</div>
+      <button class="bp" id="cleanBtn" style="background:#8b2020">🧹 거래 정리</button>
     </div>
 
     <div class="setA" id="rA">
@@ -806,6 +810,34 @@ $("bkFull").addEventListener("click",async()=>{
   const today=new Date().toISOString().slice(0,10);
   downloadCSV("pastabro_전체백업_"+today+".csv",csv);
   toast("전체 백업 완료 ✓");
+});
+
+// 거래 정리 (고아 거래 삭제)
+$("cleanBtn").addEventListener("click",async()=>{
+  if(!confirm("삭제된 손님의 거래를 찾습니다.\n계속하시겠습니까?"))return;
+  $("cleanBtn").disabled=true;$("cleanBtn").textContent="🔍 검색 중...";
+  // 1) 모든 거래 가져오기
+  const allTx=await db.collectionGroup("transactions").get();
+  // 2) 살아있는 손님 ID 집합
+  const aliveCusts=await db.collection("customers").get();
+  const aliveIds=new Set();aliveCusts.forEach(d=>aliveIds.add(d.id));
+  // 3) 고아 거래 골라내기
+  const orphans=[];
+  allTx.forEach(d=>{
+    const parentId=d.ref.parent.parent.id;
+    if(!aliveIds.has(parentId))orphans.push(d.ref);
+  });
+  $("cleanBtn").disabled=false;$("cleanBtn").textContent="🧹 거래 정리";
+  if(orphans.length===0){toast("고아 거래가 없습니다 ✓");return}
+  if(!confirm(`고아 거래 ${orphans.length}건을 발견했습니다.\n\n삭제하시겠습니까? (되돌릴 수 없음)`))return;
+  $("cleanBtn").disabled=true;$("cleanBtn").textContent="🗑️ 삭제 중...";
+  // 4) batch 삭제 (400개씩 청크)
+  const chunks=[];for(let i=0;i<orphans.length;i+=400)chunks.push(orphans.slice(i,i+400));
+  for(const chunk of chunks){
+    const b=db.batch();chunk.forEach(r=>b.delete(r));await b.commit();
+  }
+  $("cleanBtn").disabled=false;$("cleanBtn").textContent="🧹 거래 정리";
+  toast(`정리 완료: ${orphans.length}건 삭제 ✓`);
 });
 
 // PWA
