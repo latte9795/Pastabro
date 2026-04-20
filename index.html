@@ -142,7 +142,7 @@
     .sgx{position:absolute;top:8px;right:8px;font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;color:var(--sub);font-family:var(--sans)}
 
     .hh{font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-    .hi{display:flex;justify-content:space-between;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--blight)}
+    .hi{display:flex;justify-content:space-between;align-items:flex-start;padding:13px 32px 13px 0;border-bottom:1px solid var(--blight)}
     .hi:last-child{border-bottom:none}
     .hl{flex:1}
     .hm{font-size:13px;font-weight:500}
@@ -244,7 +244,19 @@
     </div>
 
     <div class="setA" id="rA">
-      <div id="rL" style="padding:4px 0"><div style="font-size:13px;color:var(--muted);padding:14px 0;text-align:center">불러오는 중...</div></div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="stBtn" data-rp="day">오늘</button>
+        <button class="stBtn" data-rp="week">이번주</button>
+        <button class="stBtn" data-rp="lweek">지난주</button>
+        <button class="stBtn" data-rp="month">이번달</button>
+        <button class="stBtn" data-rp="custom">직접선택</button>
+      </div>
+      <div id="rRange" style="display:none;gap:6px;margin-bottom:14px">
+        <input type="date" id="rFrom" class="fi" style="flex:1" />
+        <input type="date" id="rTo" class="fi" style="flex:1" />
+        <button class="bp" id="rApply" style="width:auto;padding:10px 14px">적용</button>
+      </div>
+      <div id="rL" style="padding:4px 0"><div style="font-size:13px;color:var(--muted);padding:14px 0;text-align:center">기간을 선택하세요</div></div>
     </div>
 
     <div class="setA" id="stA">
@@ -431,7 +443,6 @@ document.querySelectorAll(".tab").forEach(t=>{t.addEventListener("click",()=>{
   $("stA").className=v==="stat"?"setA show":"setA";
   $("stW").style.display=v==="list"?"flex":"none";
   $("fab").style.display=v==="list"?"flex":"none";
-  if(v==="recent")loadRecent();
   if(v==="stat")computeStats();
 })});
 $("setBtn").addEventListener("click",()=>{
@@ -442,15 +453,46 @@ $("setBtn").addEventListener("click",()=>{
 });
 
 // ── Recent transactions tab ──
+let recentPeriod=null,recentCustomFrom=null,recentCustomTo=null;
+document.querySelectorAll("[data-rp]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("[data-rp]").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+  recentPeriod=b.dataset.rp;
+  $("rRange").style.display=recentPeriod==="custom"?"flex":"none";
+  if(recentPeriod!=="custom")loadRecent();
+}));
+$("rApply").addEventListener("click",()=>{
+  if(!$("rFrom").value||!$("rTo").value){toast("기간을 선택하세요");return}
+  recentCustomFrom=new Date($("rFrom").value+"T00:00:00");
+  recentCustomTo=new Date($("rTo").value+"T23:59:59");
+  loadRecent();
+});
+
+function getRecentRange(){
+  const now=new Date();
+  if(recentPeriod==="day"){const s=new Date(now);s.setHours(0,0,0,0);const e=new Date(now);e.setHours(23,59,59,999);return[s,e]}
+  if(recentPeriod==="week"||recentPeriod==="lweek"){
+    const d=new Date(now);const day=d.getDay();const diff=(day===0?6:day-1);
+    const mon=new Date(d);mon.setDate(d.getDate()-diff);mon.setHours(0,0,0,0);
+    if(recentPeriod==="lweek")mon.setDate(mon.getDate()-7);
+    const sun=new Date(mon);sun.setDate(mon.getDate()+6);sun.setHours(23,59,59,999);
+    return[mon,sun];
+  }
+  if(recentPeriod==="month"){const s=new Date(now.getFullYear(),now.getMonth(),1);const e=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);return[s,e]}
+  if(recentPeriod==="custom"&&recentCustomFrom&&recentCustomTo)return[recentCustomFrom,recentCustomTo];
+  return[null,null];
+}
+
 function loadRecent(){
-  const c=$("rL");c.innerHTML='<div style="font-size:13px;color:var(--muted);padding:14px 0;text-align:center">불러오는 중...</div>';
-  db.collectionGroup("transactions").orderBy("createdAt","desc").limit(50).get().then(snap=>{
+  const c=$("rL");
+  const[from,to]=getRecentRange();
+  if(!from){c.innerHTML='<div style="font-size:13px;color:var(--muted);padding:14px 0;text-align:center">기간을 선택하세요</div>';return}
+  c.innerHTML='<div style="font-size:13px;color:var(--muted);padding:14px 0;text-align:center">불러오는 중...</div>';
+  db.collectionGroup("transactions").where("createdAt",">=",firebase.firestore.Timestamp.fromDate(from)).where("createdAt","<=",firebase.firestore.Timestamp.fromDate(to)).orderBy("createdAt","desc").limit(100).get().then(snap=>{
     if(snap.empty){c.innerHTML='<div style="font-size:13px;color:var(--muted);padding:14px 0;text-align:center">거래 내역이 없습니다</div>';return}
     const rows=[];snap.forEach(d=>{
       const t=d.data();const custRef=d.ref.parent.parent;
       rows.push({t,custId:custRef.id,txId:d.id});
     });
-    // Need customer names — fetch unique
     const ids=[...new Set(rows.map(r=>r.custId))];
     const nameMap={};
     Promise.all(ids.map(id=>db.collection("customers").doc(id).get().then(d=>{nameMap[id]=d.exists?(d.data().name||"?"):null}))).then(()=>{
@@ -468,7 +510,7 @@ function loadRecent(){
         c.appendChild(div);
       });
     });
-  }).catch(e=>{c.innerHTML='<div style="font-size:12px;color:var(--red);padding:14px 0;text-align:center">불러오기 실패: '+e.message+'<br>(Firestore에서 collectionGroup 인덱스가 필요할 수 있습니다)</div>'});
+  }).catch(e=>{c.innerHTML='<div style="font-size:12px;color:var(--red);padding:14px 0;text-align:center">불러오기 실패: '+e.message+'</div>'});
 }
 window.toggleRMenu=function(k,e){e.stopPropagation();document.querySelectorAll('.txPop.show').forEach(p=>{if(p.id!=='rpop_'+k)p.classList.remove('show')});$('rpop_'+k).classList.toggle('show')};
 window.openCustFromRecent=function(custId){openD(custId)};
