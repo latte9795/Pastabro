@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Pasta Bro - 매출 보고</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f5f0eb">
+<style>
+:root{--warm:#f5f0eb;--card:#fff;--text:#1a1a1a;--sub:#666;--muted:#999;--border:#e0d8cf;--accent:#6b8e5a;--green:#2d6a4f;--red:#c1121f;--blight:#f0ebe4;--sans:'Pretendard',system-ui,-apple-system,sans-serif;--serif:'Playfair Display',Georgia,serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--warm);color:var(--text);-webkit-font-smoothing:antialiased}
+.hdr{background:var(--card);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.hdr .back{background:none;border:none;font-size:18px;cursor:pointer;padding:4px}
+.hdr h1{font-family:var(--serif);font-size:17px;font-weight:600;flex:1}
+.hdr .ho{font-size:11px;color:var(--sub);background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
+.mnav{display:flex;gap:6px;padding:12px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--card);border-bottom:1px solid var(--border)}
+.mnav::-webkit-scrollbar{display:none}
+.mchip{padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-size:11px;white-space:nowrap;cursor:pointer;font-family:var(--sans);color:var(--sub);flex-shrink:0}
+.mchip.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.summary{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sCard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.sCard.wide{grid-column:1/-1}
+.sCard .sl{font-size:11px;color:var(--sub)}
+.sCard .sv{font-size:18px;font-weight:700;font-family:var(--serif);margin-top:2px}
+.sCard .sv.green{color:var(--green)}
+.tWrap{padding:0 8px 100px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;font-size:11px;width:100%;min-width:900px}
+thead{position:sticky;top:56px;z-index:10}
+th{background:var(--card);border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:600;white-space:nowrap;color:var(--sub);font-size:10px}
+td{border:1px solid var(--border);padding:6px 8px;text-align:right;white-space:nowrap;background:var(--card)}
+td:first-child,td:nth-child(2){text-align:center;font-weight:500}
+tr:last-child td{font-weight:700;background:var(--blight)}
+tr.holiday td{color:var(--red)}
+.loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px}
+.err{text-align:center;padding:40px 20px;color:var(--red);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <button class="back" onclick="location.href='index.html'">←</button>
+  <h1>매출 보고</h1>
+  <span id="curMonth" style="font-size:13px;font-weight:600"></span>
+</div>
+
+<div class="mnav" id="mNav"></div>
+
+<div id="sumArea" class="summary" style="display:none"></div>
+
+<div class="tWrap">
+  <div id="content" class="loading">데이터를 불러오는 중...</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+const SHEET_ID="13w8Z3XFM3EqGpx-YGuW4YIx5H9Qk4Z64Gu1jvT-siYw";
+const API_KEY="AIzaSyAobLBmEc8I8zGJdpjOVQxX3_347TZNJJo";
+const $=id=>document.getElementById(id);
+const fmt=n=>{if(n===null||n===undefined||n==="")return"";const v=Number(n);return isNaN(v)?""+n:"₩"+v.toLocaleString()};
+
+firebase.initializeApp({apiKey:"AIzaSyBBKhJP52I2cZJxzPNqORMCMKM1WxafPdY",authDomain:"pastabro-4e5b0.firebaseapp.com",projectId:"pastabro-4e5b0"});
+const au=firebase.auth();
+au.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+const ADMINS=["kju80259795@gmail.com","kimjungnam8722@gmail.com","sas4684@gmail.com"];
+
+au.onAuthStateChanged(u=>{
+  if(!u){location.href="index.html";return}
+  init();
+});
+
+let allSheets=[],currentSheet=null;
+
+async function init(){
+  // 1. Fetch sheet metadata
+  const metaUrl=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?key=${API_KEY}&fields=sheets.properties`;
+  const res=await fetch(metaUrl);
+  if(!res.ok){$("content").className="err";$("content").textContent="시트 접근 실패: "+res.status+" - 공유 설정을 확인하세요";return}
+  const meta=await res.json();
+
+  // 2. Parse sheet tabs - expect names like "2026-05월 매출보고"
+  allSheets=meta.sheets.map(s=>s.properties.title).filter(t=>/\d{4}-\d{2}월/.test(t)).sort();
+
+  if(!allSheets.length){$("content").className="err";$("content").textContent="매출보고 시트 탭을 찾을 수 없습니다 (형식: YYYY-MM월 매출보고)";return}
+
+  // 3. Render month chips
+  const nav=$("mNav");
+  allSheets.forEach(name=>{
+    const m=name.match(/(\d{4})-(\d{2})월/);
+    const label=m?`${m[1]}.${parseInt(m[2])}월`:"?";
+    const chip=document.createElement("button");
+    chip.className="mchip";
+    chip.textContent=label;
+    chip.dataset.sheet=name;
+    chip.addEventListener("click",()=>loadSheet(name));
+    nav.appendChild(chip);
+  });
+
+  // 4. Load latest month
+  loadSheet(allSheets[allSheets.length-1]);
+  // Scroll nav to end
+  setTimeout(()=>nav.scrollLeft=nav.scrollWidth,100);
+}
+
+async function loadSheet(name){
+  currentSheet=name;
+  // Highlight chip
+  document.querySelectorAll(".mchip").forEach(c=>c.classList.toggle("on",c.dataset.sheet===name));
+  const m=name.match(/(\d{4})-(\d{2})월/);
+  $("curMonth").textContent=m?`${m[1]}년 ${parseInt(m[2])}월`:"";
+
+  $("content").className="loading";$("content").innerHTML="데이터를 불러오는 중...";
+  $("sumArea").style.display="none";
+
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(name)}?key=${API_KEY}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`;
+  const res=await fetch(url);
+  if(!res.ok){$("content").className="err";$("content").textContent="데이터 로드 실패: "+res.status;return}
+  const data=await res.json();
+  const rows=data.values||[];
+  if(rows.length<3){$("content").className="err";$("content").textContent="데이터가 없습니다";return}
+
+  // rows[0] = category headers, rows[1] = column headers, rows[2+] = data
+  const headers=rows[1]||[];
+  const dataRows=rows.slice(2);
+
+  // Find summary row (last row, usually "총매출")
+  let summaryRow=null;
+  const lastData=dataRows[dataRows.length-1];
+  if(lastData&&lastData[0]&&typeof lastData[0]==="string"&&lastData[0].includes("총매출")){
+    summaryRow=dataRows.pop();
+  }
+
+  // Render summary
+  renderSummary(headers,dataRows,summaryRow);
+
+  // Render table
+  renderTable(headers,dataRows,summaryRow);
+}
+
+function renderSummary(headers,dataRows,summaryRow){
+  const sa=$("sumArea");
+  // Calculate from data
+  let totalSales=0,cardSales=0,cashSales=0,deliverySales=0,bizDays=0;
+  const colIdx={};
+  headers.forEach((h,i)=>colIdx[(""+h).trim()]=i);
+  const ti=colIdx["총 매출"]??colIdx["총매출"]??2;
+  const ci=colIdx["카드매출"]??5;
+  const cashi=colIdx["현금 매출"]??colIdx["현금매출"]??6;
+
+  dataRows.forEach(r=>{
+    const v=Number(r[ti])||0;
+    if(v>0)bizDays++;
+    totalSales+=v;
+    cardSales+=Number(r[ci])||0;
+    cashSales+=Number(r[cashi])||0;
+  });
+  deliverySales=totalSales-cardSales-cashSales;
+  if(deliverySales<0)deliverySales=0;
+  const avg=bizDays?Math.round(totalSales/bizDays):0;
+
+  sa.style.display="grid";
+  sa.innerHTML=`
+    <div class="sCard wide"><div class="sl">월 총매출</div><div class="sv green">${fmt(totalSales)}</div></div>
+    <div class="sCard"><div class="sl">영업일</div><div class="sv">${bizDays}일</div></div>
+    <div class="sCard"><div class="sl">일 평균</div><div class="sv">${fmt(avg)}</div></div>
+    <div class="sCard"><div class="sl">카드</div><div class="sv">${fmt(cardSales)}</div></div>
+    <div class="sCard"><div class="sl">현금</div><div class="sv">${fmt(cashSales)}</div></div>
+  `;
+}
+
+function renderTable(headers,dataRows,summaryRow){
+  let html='<table><thead><tr>';
+  headers.forEach(h=>html+=`<th>${h||""}</th>`);
+  html+='</tr></thead><tbody>';
+
+  dataRows.forEach(r=>{
+    const dow=r[1]||"";
+    const isHoliday=dow==="일"||dow==="토";
+    html+=`<tr${isHoliday?' class="holiday"':''}>`;
+    headers.forEach((h,i)=>{
+      let v=r[i]??"";
+      // Format date column
+      if(i===0&&typeof v==="number"){
+        // Excel serial date → JS date
+        const d=new Date((v-25569)*86400000);
+        v=`${d.getMonth()+1}/${d.getDate()}`;
+      }else if(i===0&&typeof v==="string"&&v.includes("-")){
+        const parts=v.split("-");
+        v=`${parseInt(parts[1])}/${parseInt(parts[2])}`;
+      }
+      // Format number columns (index 2+, except 요일 col 1, 책임자, 플랫폼취소)
+      if(i>=2&&typeof v==="number"){
+        v=v===0?"-":"₩"+v.toLocaleString();
+      }
+      html+=`<td>${v}</td>`;
+    });
+    html+='</tr>';
+  });
+
+  if(summaryRow){
+    html+='<tr>';
+    headers.forEach((h,i)=>{
+      let v=summaryRow[i]??"";
+      if(i>=2&&typeof v==="number")v=v===0?"-":"₩"+v.toLocaleString();
+      html+=`<td>${v}</td>`;
+    });
+    html+='</tr>';
+  }
+  html+='</tbody></table>';
+  $("content").className="tWrap";
+  $("content").innerHTML=html;
+}
+</script>
+</body>
+</html>
