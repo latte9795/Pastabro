@@ -54,6 +54,8 @@ td:first-child,td:nth-child(2){text-align:center;font-weight:500}
 tr:last-child td{font-weight:700;background:var(--blight)}
 tr.holiday td{color:var(--red)}
 
+.dbg{background:#fffbe5;border:1px solid #e8d97a;border-radius:8px;padding:10px 12px;margin:10px 16px;font-size:11px;font-family:monospace;color:#5a4f1a;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow-y:auto}
+
 .alyt{padding:14px;padding-bottom:100px}
 
 .heroBar{background:linear-gradient(135deg,var(--cream),#fff);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -95,6 +97,10 @@ tr.holiday td{color:var(--red)}
 .chartCard .ch3sub{font-size:11px;color:var(--muted);margin-bottom:8px}
 .chartBox{position:relative;height:240px}
 .chartBox.tall{height:280px}
+.yearChks{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.yearChk{font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:999px;background:var(--card);user-select:none}
+.yearChk input{cursor:pointer;margin:0}
+.yearChk:hover{background:var(--blight)}
 
 .alytLoad,.alytErr{text-align:center;padding:40px 20px;font-size:13px;color:var(--muted)}
 .alytErr{color:var(--red)}
@@ -131,6 +137,7 @@ tr.holiday td{color:var(--red)}
 </div>
 
 <div class="panel show" id="pReport">
+  <div id="dbgArea" class="dbg" style="display:none"></div>
   <div id="sumArea" class="summary" style="display:none"></div>
   <div class="tWrap">
     <div id="content" class="loading">데이터를 불러오는 중...</div>
@@ -151,14 +158,16 @@ tr.holiday td{color:var(--red)}
 <script>
 const SHEET_ID="13w8Z3XFM3EqGpx-YGuW4YIx5H9Qk4Z64Gu1jvT-siYw";
 const API_KEY="AIzaSyAobLBmEc8I8zGJdpjOVQxX3_347TZNJJo";
+const DEBUG=new URLSearchParams(location.search).get("debug")==="1";
 const $=id=>document.getElementById(id);
 const fmt=n=>{if(n===null||n===undefined||n==="")return"-";const v=Number(n);return isNaN(v)?""+n:"₩"+Math.round(v).toLocaleString()};
 const fmtK=n=>{if(!n)return"₩0";if(n>=10000000)return"₩"+(n/10000000).toFixed(1)+"천만";if(n>=10000)return"₩"+(n/10000).toFixed(0)+"만";return"₩"+n.toLocaleString()};
 const DOWK=["일","월","화","수","목","금","토"];
 
-// 숫자 변환 (string "1,500,000" / "₩1,500,000" / number 모두 처리)
+// 숫자 변환
 function num(v){
-  if(typeof v==="number")return v;
+  if(v===null||v===undefined)return 0;
+  if(typeof v==="number")return isNaN(v)?0:v;
   if(typeof v==="string"){
     const c=v.replace(/[₩,원\s]/g,"").trim();
     if(!c||c==="-")return 0;
@@ -168,14 +177,63 @@ function num(v){
   return 0;
 }
 
-// 헤더 행 자동 감지: "날짜" 단어가 있는 행
+// "날짜" 단어가 있는 행을 헤더 행으로
 function findHeaderIdx(rows){
   for(let i=0;i<Math.min(rows.length,5);i++){
-    const r=rows[i];
-    if(!r)continue;
+    const r=rows[i];if(!r)continue;
     if(r.some(c=>typeof c==="string"&&c.trim()==="날짜"))return i;
   }
   return 1;
+}
+
+// 헤더 행 + 인접 행을 합쳐서 통합 헤더 만들기
+function buildHeaders(rows,hIdx){
+  const main=rows[hIdx]||[];
+  const above=hIdx>0?(rows[hIdx-1]||[]):[];
+  const below=hIdx+1<rows.length?(rows[hIdx+1]||[]):[];
+  const len=Math.max(main.length,above.length,below.length);
+  const out=[];
+  for(let i=0;i<len;i++){
+    const m=main[i],a=above[i],b=below[i];
+    const mTxt=(typeof m==="string"&&m.trim())?m.trim():(typeof m==="number"?String(m):"");
+    if(mTxt){out.push(mTxt);continue}
+    // 위 행에서 의미 있는 헤더성 텍스트면 가져옴
+    const aTxt=(typeof a==="string"&&a.trim())?a.trim():"";
+    if(aTxt&&!looksLikeNumber(aTxt)){out.push(aTxt);continue}
+    const bTxt=(typeof b==="string"&&b.trim())?b.trim():"";
+    if(bTxt&&!looksLikeNumber(bTxt)){out.push(bTxt);continue}
+    out.push("");
+  }
+  return out;
+}
+function looksLikeNumber(s){
+  if(typeof s!=="string")return false;
+  return /^[\d,₩원.\s-]+$/.test(s.trim());
+}
+
+// 데이터 행인지 판별 (날짜 컬럼이 날짜 형태인 행)
+function isDataRow(r){
+  if(!r||!r.length)return false;
+  const v=r[0];
+  if(typeof v==="number"&&v>0)return true;
+  if(typeof v==="string"){
+    const t=v.trim();
+    if(/^\d{4}-\d{1,2}-\d{1,2}/.test(t))return true;
+    if(/^\d{1,2}\/\d{1,2}/.test(t))return true;
+    if(/^\d{1,2}월\s*\d{1,2}일/.test(t))return true;
+  }
+  return false;
+}
+
+// 행에서 총매출 값 가져오기 (없으면 vat*10 또는 vat+순매출 fallback)
+function getRowTotal(r,ci){
+  let v=num(r[ci.total]);
+  if(v>0)return v;
+  const vat=num(r[ci.vat]);
+  const net=num(r[ci.net]);
+  if(net>0&&vat>=0)return vat+net;
+  if(vat>0)return Math.round(vat*10);
+  return 0;
 }
 
 firebase.initializeApp({apiKey:"AIzaSyArHG7EbxhV5cIIixOcY9y162svZXx7ffA",authDomain:"pastabro-4e5b0.firebaseapp.com",projectId:"pastabro-4e5b0",storageBucket:"pastabro-4e5b0.firebasestorage.app",messagingSenderId:"614383037631",appId:"1:614383037631:web:7ec4593968f5832cb3aa0a"});
@@ -233,6 +291,7 @@ async function loadSheet(name){
   $("curMonth").textContent=m?`${m[1]}년 ${parseInt(m[2])}월`:"";
   $("content").className="loading";$("content").innerHTML="데이터를 불러오는 중...";
   $("sumArea").style.display="none";
+  $("dbgArea").style.display="none";
 
   let data;
   if(sheetCache[name]){data=sheetCache[name]}
@@ -247,34 +306,59 @@ async function loadSheet(name){
   if(rows.length<2){$("content").className="err";$("content").textContent="데이터가 없습니다";return}
 
   const hIdx=findHeaderIdx(rows);
-  const headers=rows[hIdx]||[];
-  const dataRows=rows.slice(hIdx+1);
+  const headers=buildHeaders(rows,hIdx);
+  let dataRows=rows.slice(hIdx+1);
+  // 총매출 행 분리
   let summaryRow=null;
-  const lastData=dataRows[dataRows.length-1];
-  if(lastData&&lastData[0]&&typeof lastData[0]==="string"&&lastData[0].includes("총매출")){
-    summaryRow=dataRows.pop();
+  for(let i=dataRows.length-1;i>=0;i--){
+    const v=dataRows[i]&&dataRows[i][0];
+    if(typeof v==="string"&&v.includes("총매출")){
+      summaryRow=dataRows.splice(i,1)[0];break;
+    }
   }
-  renderSummary(headers,dataRows,summaryRow);
+  // 데이터 행만 필터 (카테고리 행 등 비데이터 행 제거)
+  dataRows=dataRows.filter(isDataRow);
+
+  if(DEBUG){
+    const dbg=$("dbgArea");
+    dbg.style.display="block";
+    dbg.textContent=
+      `[DEBUG] sheet: ${name}\n`+
+      `rows.length: ${rows.length}\n`+
+      `hIdx: ${hIdx}\n`+
+      `row[0]: ${JSON.stringify(rows[0]||[])}\n`+
+      `row[1]: ${JSON.stringify(rows[1]||[])}\n`+
+      `row[2]: ${JSON.stringify(rows[2]||[])}\n`+
+      `row[3]: ${JSON.stringify(rows[3]||[])}\n`+
+      `merged headers: ${JSON.stringify(headers)}\n`+
+      `dataRows count: ${dataRows.length}\n`+
+      `first dataRow: ${JSON.stringify(dataRows[0]||[])}`;
+  }
+
+  renderSummary(headers,dataRows);
   renderTable(headers,dataRows,summaryRow);
 }
 
 function getColIdx(headers){
   const idx={};
-  headers.forEach((h,i)=>{idx[(""+h).trim()]=i});
+  headers.forEach((h,i)=>{
+    const k=(""+h).trim();
+    if(k&&!(k in idx))idx[k]=i;
+  });
   return{
     total:idx["총 매출"]??idx["총매출"]??2,
-    vat:idx["vat"]??idx["VAT"]??3,
+    vat:idx["vat"]??idx["VAT"]??idx["부가세"]??3,
     net:idx["순매출"]??4,
-    card:idx["카드매출"]??5,
-    cash:idx["현금 매출"]??idx["현금매출"]??6,
-    toss:idx["간편결제(토스페이)"]??idx["간편결제"]??7,
+    card:idx["카드매출"]??idx["카드"]??5,
+    cash:idx["현금 매출"]??idx["현금매출"]??idx["현금"]??6,
+    toss:idx["간편결제(토스페이)"]??idx["간편결제"]??idx["제로페이"]??7,
     prepay:idx["선결제(차감)"]??idx["선결제차감"]??8,
     seoul:idx["서울페이"]??9,
-    prepayX:idx["선결제(매출x)"]??10,
+    prepayX:idx["선결제(매출x)"]??idx["선결제(매출x)-제로페이,신용카드"]??10,
     bank:idx["계좌이체"]??11,
     baeminCard:idx["배민현장 카드"]??12,
     baeminCash:idx["배민현장 현금"]??13,
-    delivery:idx["선결제"]??14,
+    delivery:idx["선결제"]??idx["배달"]??14,
     baemin:idx["배민"]??-1,
     coupang:idx["쿠팡"]??-1,
     yogiyo:idx["요기요"]??-1,
@@ -282,16 +366,23 @@ function getColIdx(headers){
   };
 }
 
-function renderSummary(headers,dataRows,summaryRow){
+function renderSummary(headers,dataRows){
   const sa=$("sumArea");
   const ci=getColIdx(headers);
   let totalSales=0,cardSales=0,cashSales=0,deliverySales=0;
   dataRows.forEach(r=>{
-    totalSales+=num(r[ci.total]);
+    totalSales+=getRowTotal(r,ci);
     cardSales+=num(r[ci.card]);
     cashSales+=num(r[ci.cash]);
-    // 배달 = delivery (선결제) 컬럼. 카톡백업 시트도 K열이 SUM이라 동일하게 잡힘
-    deliverySales+=num(r[ci.delivery]);
+    // 배달: delivery 컬럼이 있으면 그걸, 없으면 배민+쿠팡+요기요+땡겨요 합산
+    let dly=num(r[ci.delivery]);
+    if(!dly){
+      if(ci.baemin>=0)dly+=num(r[ci.baemin]);
+      if(ci.coupang>=0)dly+=num(r[ci.coupang]);
+      if(ci.yogiyo>=0)dly+=num(r[ci.yogiyo]);
+      if(ci.ddang>=0)dly+=num(r[ci.ddang]);
+    }
+    deliverySales+=dly;
   });
   sa.style.display="grid";
   sa.innerHTML=`
@@ -316,14 +407,13 @@ function renderTable(headers,dataRows,summaryRow){
         v=`${d.getMonth()+1}/${d.getDate()}`;
       }else if(i===0&&typeof v==="string"&&v.includes("-")){
         const parts=v.split("-");
-        v=`${parseInt(parts[1])}/${parseInt(parts[2])}`;
+        if(parts.length>=3)v=`${parseInt(parts[1])}/${parseInt(parts[2])}`;
       }
-      // 숫자 컬럼: number든 string이든 num()으로 변환
       if(i>=2){
         const n=num(v);
         if(n)v="₩"+n.toLocaleString();
         else if(v===""||v===0||v==="-"||v===null||v===undefined)v="-";
-        else v=String(v); // 변환 실패한 string은 그대로
+        else v=String(v);
       }
       html+=`<td>${v}</td>`;
     });
@@ -375,21 +465,34 @@ async function loadAnalytics(){
     const rows=vr.values||[];
     if(rows.length<2)return;
     const hIdx=findHeaderIdx(rows);
-    const headers=rows[hIdx]||[];
+    const headers=buildHeaders(rows,hIdx);
     let dataRows=rows.slice(hIdx+1);
-    const last=dataRows[dataRows.length-1];
-    if(last&&last[0]&&typeof last[0]==="string"&&last[0].includes("총매출"))dataRows.pop();
+    for(let i=dataRows.length-1;i>=0;i--){
+      const v=dataRows[i]&&dataRows[i][0];
+      if(typeof v==="string"&&v.includes("총매출")){dataRows.splice(i,1);break}
+    }
+    dataRows=dataRows.filter(isDataRow);
     const ci=getColIdx(headers);
     const parsedRows=dataRows.map(r=>{
       let dt=null;
       const v=r[0];
       if(typeof v==="number"){dt=new Date((v-25569)*86400000)}
-      else if(typeof v==="string"&&v.includes("-")){
-        const parts=v.split("-");
-        if(parts.length>=3)dt=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+      else if(typeof v==="string"){
+        const t=v.trim();
+        if(t.includes("-")){
+          const parts=t.split("-");
+          if(parts.length>=3)dt=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+        }else if(t.includes("/")){
+          // MM/DD 형식 - 시트 이름에서 연도 추출
+          const ym=name.match(/(\d{4})-(\d{2})/);
+          if(ym){
+            const parts=t.split("/");
+            if(parts.length>=2)dt=new Date(parseInt(ym[1]),parseInt(parts[0])-1,parseInt(parts[1]));
+          }
+        }
       }
       if(dt&&!isNaN(dt))dt.setHours(0,0,0,0);
-      return{date:dt,dow:r[1]||"",total:num(r[ci.total]),raw:r};
+      return{date:dt,dow:r[1]||"",total:getRowTotal(r,ci),raw:r};
     }).filter(r=>r.date&&!isNaN(r.date));
     allMonthData[name]={headers,rows:dataRows,parsedRows,colIdx:ci};
   });
@@ -447,7 +550,6 @@ function drawStar(ctx,x,y,size,color){
 }
 Chart.register(starPlugin);
 
-// 데이터셋별 실제 날짜를 보여주는 공통 tooltip callback
 function tooltipLabelWithDate(c){
   const ds=c.chart.data.datasets[c.datasetIndex];
   const dStr=ds.dates&&ds.dates[c.dataIndex]?` · ${ds.dates[c.dataIndex]}`:"";
@@ -472,10 +574,8 @@ function renderAnalytics(baseDay){
   const dowK=DOWK[D.getDay()];
   const todayVal=baseDay.total;
 
-  // 메트릭 계산
   const lwk=findRow(allRows,addDays(D,-7));
   const lmo=findRow(allRows,addDays(D,-28));
-  // X요일 평균 = 전체 데이터의 같은 요일 평균
   const sameDowAll=allRows.filter(r=>r.date.getDay()===D.getDay()&&r.date.getTime()!==DT);
   const dowAvg=sameDowAll.length?sameDowAll.reduce((s,r)=>s+r.total,0)/sameDowAll.length:0;
   const ly=findRow(allRows,addDays(D,-364));
@@ -501,7 +601,6 @@ function renderAnalytics(baseDay){
     return`<div class="mItem"><div class="mL ${dim?'dim':''}">${label}</div><div class="mR"><span class="mPct ${pctClass(m.pct)}">${pctText(m.pct)}</span><span class="mAmt">(${fmtK(m.amt)})</span></div></div>`;
   }
 
-  // 가능한 날짜 범위 (input min/max)
   const minDate=allRows.length?isoStr(allRows.reduce((a,r)=>r.date<a?r.date:a,allRows[0].date)):"";
   const maxDate=allRows.length?isoStr(allRows.reduce((a,r)=>r.date>a?r.date:a,allRows[0].date)):"";
 
@@ -544,21 +643,22 @@ function renderAnalytics(baseDay){
     </div>
 
     <div class="chartCard">
+      <h3>저번달 비교<span id="lmCum" class="cumul">누적 -</span></h3>
+      <div class="ch3sub">이번주 vs 4주 전 (저번달 동일 주차)</div>
+      <div class="chartBox"><canvas id="cLastMonth"></canvas></div>
+    </div>
+
+    <div class="chartCard">
       <h3>작년 동일주 비교<span id="lyWkPct" class="cumul">누적 -</span></h3>
-      <div class="ch3sub">올해 이번주 vs 작년 같은 주차 (364일 전), 누적 = 월~기준일</div>
+      <div class="ch3sub">올해 이번주 vs 작년 같은 주차 (364일 전)</div>
       <div class="chartBox"><canvas id="cLastYearWeek"></canvas></div>
     </div>
 
     <div class="chartCard">
-      <h3>작년 비교<span id="lyAcPct" class="cumul">누적 -</span></h3>
-      <div class="ch3sub">1월 1일 ~ 기준일까지 누적 매출 (올해 vs 작년)</div>
-      <div class="chartBox tall"><canvas id="cLastYearAccum"></canvas></div>
-    </div>
-
-    <div class="chartCard">
-      <h3>연도별 오늘 비교</h3>
-      <div class="ch3sub">기준일과 같은 주차의 같은 요일 매출 (연도별)</div>
-      <div class="chartBox"><canvas id="cYearToday"></canvas></div>
+      <h3>누적 비교<span id="acCum" class="cumul">누적 -</span></h3>
+      <div class="ch3sub">1월 1일 ~ 기준일까지 일별 누적 매출. 연도 체크박스로 비교</div>
+      <div class="yearChks" id="yearChks"></div>
+      <div class="chartBox tall"><canvas id="cAccum"></canvas></div>
     </div>
 
     <div class="chartCard">
@@ -568,7 +668,6 @@ function renderAnalytics(baseDay){
     </div>
   `;
 
-  // 달력으로 기준일 변경
   $("baseDate").addEventListener("change",e=>{
     const v=e.target.value;
     if(!v)return;
@@ -592,9 +691,9 @@ function renderAnalytics(baseDay){
 
   drawPayChart(baseDay);
   drawLastWeekChart(allRows,baseDay);
+  drawLastMonthChart(allRows,baseDay);
   drawLastYearWeekChart(allRows,baseDay);
-  drawLastYearAccumChart(allRows,baseDay);
-  drawYearTodayChart(allRows,baseDay,wkNum);
+  drawAccumChart(allRows,baseDay);
   drawYearWeekChart(allRows,baseDay);
 }
 
@@ -613,7 +712,6 @@ function drawPayChart(latest){
     {label:"계좌이체",val:num(r[ci.bank]),color:"#7a6650"},
     {label:"배민현장",val:num(r[ci.baeminCard])+num(r[ci.baeminCash]),color:"#c1121f"}
   ];
-  // 배달 detail (배민/쿠팡/요기요/땡겨요 컬럼이 있으면 분리, 없으면 통합)
   const hasDetail=ci.baemin>=0||ci.coupang>=0||ci.yogiyo>=0||ci.ddang>=0;
   if(hasDetail){
     if(ci.baemin>=0)items.push({label:"배민",val:num(r[ci.baemin]),color:"#e07856"});
@@ -639,50 +737,54 @@ function drawPayChart(latest){
   });
 }
 
-function drawLastWeekChart(allRows,latest){
+// 공통: 7일 라인 비교 차트 빌더 (저번주, 저번달, 작년동일주)
+function build7DayCompare(allRows,latest,daysOffset,thisLabel,otherLabel,otherColor,cumElId){
   const D=latest.date;
   const dow=D.getDay();
   const monThis=addDays(D,dow===0?-6:-(dow-1));
-  const monLast=addDays(monThis,-7);
-  const dayOffset=dow===0?6:dow-1; // 월=0...일=6 (기준일 월요일부터의 인덱스)
+  const monOther=addDays(monThis,daysOffset);
+  const dayOffset=dow===0?6:dow-1;
 
-  const labels=[],thisVals=[],lastVals=[],thisDates=[],lastDates=[];
-  let starIdx=-1,sumThis=0,sumLast=0;
+  const labels=[],thisVals=[],otherVals=[],thisDates=[],otherDates=[];
+  let starIdx=-1,sumThis=0,sumOther=0;
   for(let i=0;i<7;i++){
-    const dThis=addDays(monThis,i),dLast=addDays(monLast,i);
+    const dThis=addDays(monThis,i),dOther=addDays(monOther,i);
     labels.push(`${dThis.getMonth()+1}/${dThis.getDate()}\n(${DOWK[dThis.getDay()]})`);
     thisDates.push(shortDate(dThis));
-    lastDates.push(shortDate(dLast));
-    const rT=findRow(allRows,dThis),rL=findRow(allRows,dLast);
+    otherDates.push(shortDate(dOther));
+    const rT=findRow(allRows,dThis),rO=findRow(allRows,dOther);
     thisVals.push(rT&&rT.total>0?rT.total:null);
-    lastVals.push(rL&&rL.total>0?rL.total:null);
+    otherVals.push(rO&&rO.total>0?rO.total:null);
     if(dThis.getTime()===D.getTime())starIdx=i;
     if(i<=dayOffset){
       if(rT)sumThis+=rT.total;
-      if(rL)sumLast+=rL.total;
+      if(rO)sumOther+=rO.total;
     }
   }
-  const cumPct=sumLast?((sumThis-sumLast)/sumLast)*100:null;
-  const el=$("lwkCum");
+  const cumPct=sumOther?((sumThis-sumOther)/sumOther)*100:null;
+  const el=$(cumElId);
   const dowKr=DOWK[D.getDay()];
   if(el){
     if(cumPct!==null){el.textContent=`${dowKr}요일까지 누적 ${pctText(cumPct)}`;el.className=`cumul ${pctClass(cumPct)}`}
     else el.textContent=`${dowKr}요일까지 누적 -`;
   }
+  return{labels,thisVals,otherVals,thisDates,otherDates,starIdx,thisLabel,otherLabel,otherColor};
+}
 
-  destroyChart("lw");
-  chartInstances.lw=new Chart(document.getElementById("cLastWeek"),{
+function drawCompareChart(canvasId,d,chartKey){
+  destroyChart(chartKey);
+  chartInstances[chartKey]=new Chart(document.getElementById(canvasId),{
     type:"line",
-    data:{labels,datasets:[
-      {label:"이번주",data:thisVals,dates:thisDates,borderColor:"#2d6a4f",backgroundColor:"rgba(45,106,79,0.08)",borderWidth:2.5,tension:0.3,pointRadius:3,spanGaps:true},
-      {label:"지난주",data:lastVals,dates:lastDates,borderColor:"#e07856",backgroundColor:"rgba(224,120,86,0.08)",borderWidth:2,tension:0.3,pointRadius:3,spanGaps:true,borderDash:[4,4]}
+    data:{labels:d.labels,datasets:[
+      {label:d.thisLabel,data:d.thisVals,dates:d.thisDates,borderColor:"#2d6a4f",backgroundColor:"rgba(45,106,79,0.08)",borderWidth:2.5,tension:0.3,pointRadius:3,spanGaps:true},
+      {label:d.otherLabel,data:d.otherVals,dates:d.otherDates,borderColor:d.otherColor,backgroundColor:d.otherColor+"15",borderWidth:2,tension:0.3,pointRadius:3,spanGaps:true,borderDash:[4,4]}
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{
         legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:8}},
         tooltip:{callbacks:{label:tooltipLabelWithDate}},
-        starMarker:{point:starIdx,datasetIdx:0,size:9}
+        starMarker:{point:d.starIdx,datasetIdx:0,size:9}
       },
       scales:{
         y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
@@ -690,161 +792,120 @@ function drawLastWeekChart(allRows,latest){
       }
     }
   });
+}
+
+function drawLastWeekChart(allRows,latest){
+  const d=build7DayCompare(allRows,latest,-7,"이번주","지난주","#e07856","lwkCum");
+  drawCompareChart("cLastWeek",d,"lw");
+}
+
+function drawLastMonthChart(allRows,latest){
+  const d=build7DayCompare(allRows,latest,-28,"이번주","저번달 같은주","#9e6850","lmCum");
+  drawCompareChart("cLastMonth",d,"lm");
 }
 
 function drawLastYearWeekChart(allRows,latest){
-  const D=latest.date;
-  const dow=D.getDay();
-  const monThis=addDays(D,dow===0?-6:-(dow-1));
-  const monLY=addDays(monThis,-364);
-  const dayOffset=dow===0?6:dow-1;
-
-  const labels=[],thisVals=[],lyVals=[],thisDates=[],lyDates=[];
-  let starIdx=-1,sumT=0,sumY=0;
-  for(let i=0;i<7;i++){
-    const dThis=addDays(monThis,i),dLY=addDays(monLY,i);
-    labels.push(`${dThis.getMonth()+1}/${dThis.getDate()}\n(${DOWK[dThis.getDay()]})`);
-    thisDates.push(shortDate(dThis));
-    lyDates.push(shortDate(dLY));
-    const rT=findRow(allRows,dThis),rY=findRow(allRows,dLY);
-    thisVals.push(rT&&rT.total>0?rT.total:null);
-    lyVals.push(rY&&rY.total>0?rY.total:null);
-    if(dThis.getTime()===D.getTime())starIdx=i;
-    if(i<=dayOffset){
-      if(rT)sumT+=rT.total;
-      if(rY)sumY+=rY.total;
-    }
-  }
-  const cumPct=sumY?((sumT-sumY)/sumY)*100:null;
-  const el=$("lyWkPct");
-  const dowKr=DOWK[D.getDay()];
-  if(el){
-    if(cumPct!==null){el.textContent=`${dowKr}요일까지 누적 ${pctText(cumPct)}`;el.className=`cumul ${pctClass(cumPct)}`}
-    else el.textContent=`${dowKr}요일까지 누적 -`;
-  }
-
-  destroyChart("lyw");
-  chartInstances.lyw=new Chart(document.getElementById("cLastYearWeek"),{
-    type:"line",
-    data:{labels,datasets:[
-      {label:D.getFullYear()+"년 이번주",data:thisVals,dates:thisDates,borderColor:"#2d6a4f",backgroundColor:"rgba(45,106,79,0.08)",borderWidth:2.5,tension:0.3,pointRadius:3,spanGaps:true},
-      {label:(D.getFullYear()-1)+"년 같은주",data:lyVals,dates:lyDates,borderColor:"#9e8865",backgroundColor:"rgba(158,136,101,0.08)",borderWidth:2,tension:0.3,pointRadius:3,spanGaps:true,borderDash:[4,4]}
-    ]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:8}},
-        tooltip:{callbacks:{label:tooltipLabelWithDate}},
-        starMarker:{point:starIdx,datasetIdx:0,size:9}
-      },
-      scales:{
-        y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
-        x:{ticks:{font:{family:"Pretendard,sans-serif",size:10}}}
-      }
-    }
-  });
+  const yr=latest.date.getFullYear();
+  const d=build7DayCompare(allRows,latest,-364,yr+"년 이번주",(yr-1)+"년 같은주","#9e8865","lyWkPct");
+  drawCompareChart("cLastYearWeek",d,"lyw");
 }
 
-function drawLastYearAccumChart(allRows,latest){
-  const D=latest.date;
-  const yr=D.getFullYear();
-  const start=new Date(yr,0,1);
-  const startLY=new Date(yr-1,0,1);
-  const endLY=new Date(yr-1,D.getMonth(),D.getDate());
+function drawAccumChart(allRows,baseDay){
+  const D=baseDay.date;
+  const yearsAvail=[...new Set(allRows.map(r=>r.date.getFullYear()))].sort();
+  const baseYear=D.getFullYear();
+  const colorPalette=["#2d6a4f","#9e8865","#5fa8d3","#c4a77d","#7a9050","#e07856","#8a5a5a","#5a8a8a"];
+  const colors={};
+  yearsAvail.slice().sort((a,b)=>b-a).forEach((yr,i)=>{colors[yr]=colorPalette[i%colorPalette.length]});
 
-  function buildAccum(s,e){
-    let sum=0;const arr=[];const d=new Date(s);
-    while(d<=e){
+  const chksDiv=$("yearChks");
+  chksDiv.innerHTML=yearsAvail.map(yr=>{
+    const checked=(yr===baseYear||yr===baseYear-1)?"checked":"";
+    return `<label class="yearChk">
+      <input type="checkbox" data-year="${yr}" ${checked} style="accent-color:${colors[yr]}">
+      <span style="color:${colors[yr]};font-weight:600">${yr}년</span>
+    </label>`;
+  }).join("");
+
+  // X축: 1/1 ~ 기준일
+  const labels=[];
+  const tempDate=new Date(2000,0,1);
+  const endDate=new Date(2000,D.getMonth(),D.getDate());
+  while(tempDate<=endDate){
+    labels.push(`${tempDate.getMonth()+1}/${tempDate.getDate()}`);
+    tempDate.setDate(tempDate.getDate()+1);
+  }
+
+  function buildSeries(yr){
+    let sum=0;const arr=[];
+    const start=new Date(yr,0,1);
+    const end=new Date(yr,D.getMonth(),D.getDate());
+    const d=new Date(start);
+    while(d<=end){
       const r=findRow(allRows,d);
       if(r&&r.total>0)sum+=r.total;
-      arr.push({date:new Date(d),sum});
+      arr.push(sum);
       d.setDate(d.getDate()+1);
     }
     return arr;
   }
-  const accThis=buildAccum(start,D);
-  const accLY=buildAccum(startLY,endLY);
 
-  const labels=accThis.map(x=>`${x.date.getMonth()+1}/${x.date.getDate()}`);
-  const thisData=accThis.map(x=>x.sum);
-  const lyData=accLY.map(x=>x.sum);
-  const thisDates=accThis.map(x=>shortDate(x.date));
-  const lyDates=accLY.map(x=>shortDate(x.date));
-  while(lyData.length<thisData.length){lyData.push(null);lyDates.push("")}
+  function render(){
+    const checked=Array.from(document.querySelectorAll("#yearChks input:checked")).map(c=>parseInt(c.dataset.year)).sort((a,b)=>b-a);
+    const datasets=checked.map((yr)=>{
+      const data=buildSeries(yr);
+      while(data.length<labels.length)data.push(null);
+      const isLatest=yr===Math.max(...checked);
+      return{
+        label:yr+"년",
+        data,
+        borderColor:colors[yr],
+        backgroundColor:colors[yr]+"15",
+        borderWidth:isLatest?2.5:1.8,
+        tension:0.2,
+        pointRadius:0,
+        fill:false,
+        borderDash:isLatest?[]:[3,3]
+      };
+    });
 
-  const finalThis=thisData[thisData.length-1]||0;
-  const finalLY=accLY.length?accLY[accLY.length-1].sum:0;
-  const cumPct=finalLY?((finalThis-finalLY)/finalLY)*100:null;
-  const el=$("lyAcPct");
-  if(el){
-    if(cumPct!==null){el.textContent=`${shortDate(D)}까지 연간 누적 ${pctText(cumPct)}`;el.className=`cumul ${pctClass(cumPct)}`}
-    else{el.textContent="작년 데이터 없음";el.className="cumul"}
+    destroyChart("ac");
+    const ctx=document.getElementById("cAccum");
+    if(!ctx)return;
+    chartInstances.ac=new Chart(ctx,{
+      type:"line",
+      data:{labels,datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{mode:"index",intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y?fmt(c.parsed.y):'-'}`}}
+        },
+        scales:{
+          y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
+          x:{ticks:{font:{family:"Pretendard,sans-serif",size:9},maxTicksLimit:12,autoSkip:true}}
+        }
+      }
+    });
+
+    const el=$("acCum");
+    if(checked.length>=2){
+      const cur=checked[0];
+      const prev=checked[1];
+      const curSum=buildSeries(cur).filter(v=>v).pop()||0;
+      const prevSum=buildSeries(prev).filter(v=>v).pop()||0;
+      const pct=prevSum?((curSum-prevSum)/prevSum)*100:null;
+      if(el){
+        if(pct!==null){el.textContent=`${cur} vs ${prev}: ${pctText(pct)}`;el.className=`cumul ${pctClass(pct)}`}
+        else{el.textContent="-";el.className="cumul"}
+      }
+    }else if(el){
+      el.textContent="2개 이상 선택";el.className="cumul";
+    }
   }
 
-  const starIdx=thisData.length-1;
-
-  destroyChart("lya");
-  chartInstances.lya=new Chart(document.getElementById("cLastYearAccum"),{
-    type:"line",
-    data:{labels,datasets:[
-      {label:yr+"년 누적",data:thisData,dates:thisDates,borderColor:"#2d6a4f",backgroundColor:"rgba(45,106,79,0.1)",borderWidth:2.5,tension:0.2,pointRadius:0,fill:false},
-      {label:(yr-1)+"년 누적",data:lyData,dates:lyDates,borderColor:"#9e8865",backgroundColor:"rgba(158,136,101,0.05)",borderWidth:2,tension:0.2,pointRadius:0,borderDash:[4,4],fill:false}
-    ]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:8}},
-        tooltip:{mode:"index",intersect:false,callbacks:{label:tooltipLabelWithDate}},
-        starMarker:{point:starIdx,datasetIdx:0,size:11}
-      },
-      scales:{
-        y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
-        x:{ticks:{font:{family:"Pretendard,sans-serif",size:9},maxTicksLimit:12,autoSkip:true}}
-      }
-    }
-  });
-}
-
-function drawYearTodayChart(allRows,latest,wkNum){
-  const D=latest.date;
-  const offset=D.getDay()===0?6:D.getDay()-1;
-  const years=[...new Set(allRows.map(r=>r.date.getFullYear()))].sort();
-  const labels=[],vals=[],dates=[];
-  years.forEach(yr=>{
-    const m=getMondayOfWeek(yr,wkNum);
-    const target=addDays(m,offset);
-    const r=findRow(allRows,target);
-    const dowS=DOWK[target.getDay()];
-    labels.push(`${yr}년 (${dowS})`);
-    vals.push(r&&r.total>0?r.total:null);
-    dates.push(shortDate(target));
-  });
-
-  destroyChart("yt");
-  chartInstances.yt=new Chart(document.getElementById("cYearToday"),{
-    type:"bar",
-    data:{labels,datasets:[{
-      label:"매출",data:vals,dates:dates,
-      backgroundColor:vals.map((_,i)=>i===vals.length-1?"#2d6a4f":"rgba(107,142,90,0.6)"),
-      borderRadius:4,borderWidth:1,
-      borderColor:vals.map((_,i)=>i===vals.length-1?"#1a4a32":"rgba(107,142,90,0.8)")
-    }]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:c=>{
-          const ds=c.chart.data.datasets[c.datasetIndex];
-          const dStr=ds.dates&&ds.dates[c.dataIndex]?ds.dates[c.dataIndex]:"";
-          return c.parsed.y?`${dStr}: ${fmt(c.parsed.y)}`:`${dStr}: 데이터 없음`;
-        }}}
-      },
-      scales:{
-        y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
-        x:{ticks:{font:{family:"Pretendard,sans-serif",size:11}}}
-      }
-    }
-  });
+  chksDiv.addEventListener("change",render);
+  render();
 }
 
 function drawYearWeekChart(allRows,latest){
@@ -855,7 +916,6 @@ function drawYearWeekChart(allRows,latest){
     if(yearWeekMap[year][week]===null)yearWeekMap[year][week]=0;
     yearWeekMap[year][week]+=r.total;
   });
-
   const years=Object.keys(yearWeekMap).map(Number).sort();
   const labels=[];for(let i=1;i<=52;i++)labels.push(i+"주");
   const baseColor=[45,106,79];
@@ -871,7 +931,6 @@ function drawYearWeekChart(allRows,latest){
       borderWidth:w,tension:0.25,pointRadius:0,pointHoverRadius:4,spanGaps:false
     };
   });
-
   destroyChart("yw");
   chartInstances.yw=new Chart(document.getElementById("cYearWeek"),{
     type:"line",
