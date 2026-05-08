@@ -42,19 +42,20 @@
 
     /* ── APP ── */
     #AP{display:none;height:100%}
-    .shell{max-width:520px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative}
+    .shell{max-width:720px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative}
 
-    .hdr{background:var(--card);padding:14px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
-    .ht{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-    .hb{font-family:var(--serif);font-size:20px;font-weight:400;letter-spacing:.02em}
-    .hr{display:flex;align-items:center;gap:8px}
-    .hn{font-size:11px;color:var(--sub)}
-    .ho{font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:3px 10px;border-radius:999px;cursor:pointer;font-family:var(--sans)}
+    .hdr{background:var(--card);padding:16px 18px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+    .ht{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px}
+    .hb{font-family:var(--serif);font-size:20px;font-weight:400;letter-spacing:.02em;white-space:nowrap;flex-shrink:0}
+    .hr{display:flex;align-items:center;gap:6px;flex-shrink:0}
+    .hn{font-size:11px;color:var(--sub);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    @media(max-width:540px){.hn{display:none}}
+    .ho{font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:4px 9px;border-radius:999px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
 
     .sw{position:relative}
-    .si{width:100%;padding:10px 14px 10px 36px;font-size:15px;border-radius:999px;border:1px solid var(--border);outline:none;background:var(--bg);font-family:var(--sans);transition:all .15s}
+    .si{width:100%;padding:14px 18px 14px 44px;font-size:16px;border-radius:999px;border:1px solid var(--border);outline:none;background:var(--bg);font-family:var(--sans);transition:all .15s}
     .si:focus{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 3px rgba(26,26,26,.06)}
-    .sic{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none}
+    .sic{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--muted);pointer-events:none}
 
     .tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border)}
     .tab{flex:1;padding:11px;font-size:13px;font-weight:500;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--sans)}
@@ -76,9 +77,9 @@
     .emp{text-align:center;padding:56px 20px;color:var(--muted);font-size:14px}
     .emp-i{font-size:40px;margin-bottom:14px;opacity:.6}
 
-    .fab{position:fixed;bottom:24px;right:calc(50% - 240px);width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;font-size:28px;border:none;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;z-index:50}
+    .fab{position:fixed;bottom:24px;right:calc(50% - 340px);width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;font-size:28px;border:none;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;z-index:50}
     .fab:active{transform:scale(.9)}
-    @media(max-width:520px){.fab{right:20px}}
+    @media(max-width:720px){.fab{right:20px}}
 
     /* ── MODAL ── */
     .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:flex-end;justify-content:center}
@@ -242,6 +243,7 @@
       <div class="ht">
         <div class="hb">pasta bro</div>
         <div class="hr"><span class="hn" id="uN"></span><button class="ho" onclick="location.href='sales.html'" style="margin-right:4px" title="매출 보고">📊</button><button class="ho" id="setBtn" style="margin-right:4px" title="설정">⚙️</button><button class="ho" id="loBtn">로그아웃</button></div>
+      </div>
       <div class="sw"><span class="sic">🔍</span><input type="text" class="si" id="sI" placeholder="손님 이름 · 연락처 검색" autocomplete="off" /></div>
     </div>
     <div class="tabs">
