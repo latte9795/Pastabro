@@ -7,7 +7,13 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#f5f0eb">
 <style>
-:root{--warm:#f5f0eb;--card:#fff;--text:#1a1a1a;--sub:#666;--muted:#999;--border:#e0d8cf;--accent:#6b8e5a;--green:#2d6a4f;--red:#c1121f;--blue:#1e4d8c;--blight:#f0ebe4;--sans:'Pretendard',system-ui,-apple-system,sans-serif;--serif:'Playfair Display',Georgia,serif}
+:root{
+  --warm:#f5f0eb;--card:#fff;--text:#1a1a1a;--sub:#666;--muted:#999;
+  --border:#e0d8cf;--accent:#6b8e5a;--accent2:#a3b18a;--green:#2d6a4f;
+  --red:#c1121f;--blue:#1e4d8c;--blight:#f0ebe4;--cream:#faf7f2;
+  --sans:'Pretendard',system-ui,-apple-system,sans-serif;
+  --serif:'Playfair Display',Georgia,serif;
+}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:var(--sans);background:var(--warm);color:var(--text);-webkit-font-smoothing:antialiased}
 .wrap{max-width:1100px;margin:0 auto}
@@ -15,29 +21,23 @@ body{font-family:var(--sans);background:var(--warm);color:var(--text);-webkit-fo
 .hdr{background:var(--card);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
 .hdr .back{background:none;border:none;font-size:18px;cursor:pointer;padding:4px}
 .hdr h1{font-family:var(--serif);font-size:17px;font-weight:600;flex:1}
-.hdr .ho{font-size:11px;color:var(--sub);background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
 .curM{font-size:13px;font-weight:600}
 
-/* Tab bar */
 .tabBar{display:flex;background:var(--card);border-bottom:1px solid var(--border);padding:0 16px}
 .tBtn{flex:1;max-width:200px;padding:12px 16px;font-size:13px;font-weight:500;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--sans)}
 .tBtn.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
 
-/* Month nav with arrows */
 .navWrap{display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--card);border-bottom:1px solid var(--border)}
 .navArr{flex-shrink:0;width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--card);font-size:14px;cursor:pointer;color:var(--sub);font-family:var(--sans);display:flex;align-items:center;justify-content:center}
 .navArr:hover{background:var(--blight);color:var(--text)}
-.navArr:disabled{opacity:.3;cursor:not-allowed}
 .mnav{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1;scroll-behavior:smooth}
 .mnav::-webkit-scrollbar{display:none}
 .mchip{padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-size:11px;white-space:nowrap;cursor:pointer;font-family:var(--sans);color:var(--sub);flex-shrink:0}
 .mchip.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
 
-/* Panels */
 .panel{display:none}
 .panel.show{display:block}
 
-/* Report tab summary */
 .summary{padding:16px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 @media(min-width:720px){.summary{grid-template-columns:repeat(4,1fr)}}
 .sCard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
@@ -45,7 +45,6 @@ body{font-family:var(--sans);background:var(--warm);color:var(--text);-webkit-fo
 .sCard .sl{font-size:11px;color:var(--sub)}
 .sCard .sv{font-size:18px;font-weight:700;font-family:var(--serif);margin-top:2px}
 .sCard .sv.green{color:var(--green)}
-
 .tWrap{padding:0 8px 100px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{border-collapse:collapse;font-size:11px;width:100%;min-width:900px}
 thead{position:sticky;top:56px;z-index:10}
@@ -55,35 +54,57 @@ td:first-child,td:nth-child(2){text-align:center;font-weight:500}
 tr:last-child td{font-weight:700;background:var(--blight)}
 tr.holiday td{color:var(--red)}
 
-/* Analytics tab */
-.alyt{padding:16px;padding-bottom:100px}
-.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
-.mCard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 14px;text-align:center}
-.mCard .mL{font-size:11px;color:var(--sub);margin-bottom:8px;line-height:1.4}
-.mCard .mV{font-size:32px;font-weight:700;font-family:var(--serif);line-height:1}
-.mCard .mV.up{color:var(--red)}
-.mCard .mV.down{color:var(--blue)}
-.mCard .mV.neutral{color:var(--muted)}
-.mCard .mSub{font-size:10px;color:var(--muted);margin-top:6px}
+.alyt{padding:14px;padding-bottom:100px}
 
-.chartCard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
-.chartCard h3{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text);font-family:var(--sans)}
-.chartCard .ch3sub{font-size:10px;color:var(--muted);font-weight:400;margin-left:6px}
+.heroBar{background:linear-gradient(135deg,var(--cream),#fff);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.heroBar .hbT{font-size:11px;color:var(--sub);letter-spacing:.04em}
+.heroBar .hbD{font-size:15px;font-weight:600;margin-top:2px;display:flex;align-items:center;gap:6px}
+.heroBar .hbV{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--green)}
+
+.topGrid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px}
+@media(min-width:680px){.topGrid{grid-template-columns:280px 1fr}}
+
+.payCard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+.payCard h3{font-size:12px;font-weight:600;color:var(--sub);margin-bottom:6px}
+.payToday{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--green);margin-bottom:8px}
+.payBox{position:relative;height:200px}
+
+.metricCard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.metricCard h3{font-size:12px;font-weight:600;color:var(--sub);margin-bottom:10px}
+.mList{display:flex;flex-direction:column;gap:0}
+.mItem{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--blight)}
+.mItem:last-child{border-bottom:none}
+.mItem .mL{font-size:12px;color:var(--text);font-weight:500}
+.mItem .mL.dim{color:var(--muted);font-weight:400}
+.mItem .mR{display:flex;align-items:center;gap:8px;font-size:12px}
+.mItem .mPct{font-weight:700;font-family:var(--serif);font-size:14px}
+.mItem .mPct.up{color:var(--red)}
+.mItem .mPct.down{color:var(--blue)}
+.mItem .mPct.neu{color:var(--muted)}
+.mItem .mAmt{color:var(--sub);font-size:11px;font-family:var(--serif)}
+.mItem .mNd{color:var(--muted);font-size:11px;font-style:italic}
+
+.chartCard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.chartCard h3{font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.chartCard h3 .cumul{font-size:11px;font-weight:500;color:var(--sub);background:var(--blight);padding:3px 8px;border-radius:999px;font-family:var(--serif)}
+.chartCard h3 .cumul.up{color:var(--red);background:#fdf0f0}
+.chartCard h3 .cumul.down{color:var(--blue);background:#eef2f8}
+.chartCard .ch3sub{font-size:11px;color:var(--muted);margin-bottom:8px}
 .chartBox{position:relative;height:240px}
 .chartBox.tall{height:280px}
-.chartBox.donut{height:240px;max-width:280px;margin:0 auto}
 
 .alytLoad,.alytErr{text-align:center;padding:40px 20px;font-size:13px;color:var(--muted)}
 .alytErr{color:var(--red)}
-
 .loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px}
 .err{text-align:center;padding:40px 20px;color:var(--red);font-size:13px}
 
-/* Today summary card in analytics */
-.todayBar{background:linear-gradient(135deg,#f8f5f0,#fff);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-.todayBar .tbL{font-size:11px;color:var(--sub)}
-.todayBar .tbD{font-size:14px;font-weight:600;margin-top:2px}
-.todayBar .tbV{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--green)}
+@media(max-width:680px){
+  .heroBar .hbV{font-size:20px}
+  .metricCard{padding:12px 14px}
+  .mItem .mL{font-size:11px}
+  .mItem .mR{font-size:11px}
+  .mItem .mPct{font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -106,7 +127,6 @@ tr.holiday td{color:var(--red)}
   <button class="navArr" id="nR" title="다음">▷</button>
 </div>
 
-<!-- ── 매출표 탭 ── -->
 <div class="panel show" id="pReport">
   <div id="sumArea" class="summary" style="display:none"></div>
   <div class="tWrap">
@@ -114,10 +134,9 @@ tr.holiday td{color:var(--red)}
   </div>
 </div>
 
-<!-- ── 분석 탭 ── -->
 <div class="panel" id="pAlyt">
   <div class="alyt" id="alytBody">
-    <div class="alytLoad">분석을 위해 매출표 탭을 먼저 둘러본 후 이 탭으로 오시면 자동 로드됩니다.</div>
+    <div class="alytLoad">분석 데이터를 준비하는 중...</div>
   </div>
 </div>
 
@@ -130,9 +149,9 @@ tr.holiday td{color:var(--red)}
 const SHEET_ID="13w8Z3XFM3EqGpx-YGuW4YIx5H9Qk4Z64Gu1jvT-siYw";
 const API_KEY="AIzaSyAobLBmEc8I8zGJdpjOVQxX3_347TZNJJo";
 const $=id=>document.getElementById(id);
-const fmt=n=>{if(n===null||n===undefined||n==="")return"-";const v=Number(n);return isNaN(v)?""+n:"₩"+v.toLocaleString()};
+const fmt=n=>{if(n===null||n===undefined||n==="")return"-";const v=Number(n);return isNaN(v)?""+n:"₩"+Math.round(v).toLocaleString()};
 const fmtK=n=>{if(!n)return"₩0";if(n>=10000000)return"₩"+(n/10000000).toFixed(1)+"천만";if(n>=10000)return"₩"+(n/10000).toFixed(0)+"만";return"₩"+n.toLocaleString()};
-const DOW=["일","월","화","수","목","금","토"];
+const DOWK=["일","월","화","수","목","금","토"];
 
 firebase.initializeApp({apiKey:"AIzaSyArHG7EbxhV5cIIixOcY9y162svZXx7ffA",authDomain:"pastabro-4e5b0.firebaseapp.com",projectId:"pastabro-4e5b0",storageBucket:"pastabro-4e5b0.firebasestorage.app",messagingSenderId:"614383037631",appId:"1:614383037631:web:7ec4593968f5832cb3aa0a"});
 const au=firebase.auth();
@@ -187,7 +206,6 @@ async function loadSheet(name){
   document.querySelectorAll(".mchip").forEach(c=>c.classList.toggle("on",c.dataset.sheet===name));
   const m=name.match(/(\d{4})-(\d{2})월/);
   $("curMonth").textContent=m?`${m[1]}년 ${parseInt(m[2])}월`:"";
-
   $("content").className="loading";$("content").innerHTML="데이터를 불러오는 중...";
   $("sumArea").style.display="none";
 
@@ -202,15 +220,11 @@ async function loadSheet(name){
   }
   const rows=data.values||[];
   if(rows.length<3){$("content").className="err";$("content").textContent="데이터가 없습니다";return}
-
   const headers=rows[1]||[];
   const dataRows=rows.slice(2);
   let summaryRow=null;
   const lastData=dataRows[dataRows.length-1];
-  if(lastData&&lastData[0]&&typeof lastData[0]==="string"&&lastData[0].includes("총매출")){
-    summaryRow=dataRows.pop();
-  }
-
+  if(lastData&&lastData[0]&&typeof lastData[0]==="string"&&lastData[0].includes("총매출")){summaryRow=dataRows.pop()}
   renderSummary(headers,dataRows,summaryRow);
   renderTable(headers,dataRows,summaryRow);
 }
@@ -292,7 +306,6 @@ function renderTable(headers,dataRows,summaryRow){
   $("content").innerHTML=html;
 }
 
-// ─────── Tab switching ───────
 document.querySelectorAll(".tBtn").forEach(b=>b.addEventListener("click",()=>{
   document.querySelectorAll(".tBtn").forEach(x=>x.classList.remove("on"));
   b.classList.add("on");
@@ -303,12 +316,11 @@ document.querySelectorAll(".tBtn").forEach(b=>b.addEventListener("click",()=>{
 }));
 
 // ─────── Analytics ───────
-let allMonthData={}; // {sheetName: {headers, rows, parsedRows}}
+let allMonthData={};
 let chartInstances={};
 
 async function loadAnalytics(){
   $("alytBody").innerHTML='<div class="alytLoad">분석 데이터를 불러오는 중... (시트 '+allSheets.length+'개)</div>';
-  // batchGet으로 모든 시트 한번에
   const ranges=allSheets.map(n=>`ranges=${encodeURIComponent(n)}`).join("&");
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?${ranges}&key=${API_KEY}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`;
   const res=await fetch(url);
@@ -324,16 +336,13 @@ async function loadAnalytics(){
     let dataRows=rows.slice(2);
     const last=dataRows[dataRows.length-1];
     if(last&&last[0]&&typeof last[0]==="string"&&last[0].includes("총매출"))dataRows.pop();
-    // parse dates
     const ci=getColIdx(headers);
     const parsedRows=dataRows.map(r=>{
       let dt=null;
       const v=r[0];
-      if(typeof v==="number"){
-        dt=new Date((v-25569)*86400000);
-      }else if(typeof v==="string"&&v.includes("-")){
-        dt=new Date(v);
-      }
+      if(typeof v==="number"){dt=new Date((v-25569)*86400000)}
+      else if(typeof v==="string"&&v.includes("-")){dt=new Date(v)}
+      if(dt&&!isNaN(dt))dt.setHours(0,0,0,0);
       return{date:dt,dow:r[1]||"",total:Number(r[ci.total])||0,raw:r};
     }).filter(r=>r.date&&!isNaN(r.date));
     allMonthData[name]={headers,rows:dataRows,parsedRows,colIdx:ci};
@@ -343,79 +352,170 @@ async function loadAnalytics(){
   renderAnalytics();
 }
 
+function addDays(d,n){const x=new Date(d);x.setDate(d.getDate()+n);return x}
+function findRow(allRows,d){const t=d.getTime();return allRows.find(r=>r.date.getTime()===t)}
+function pctClass(p){return p>0?'up':p<0?'down':'neu'}
+function pctText(p){if(!isFinite(p)||p===null)return'-';return(p>=0?'△ ':'▽ ')+Math.abs(p).toFixed(1)+'%'}
+
+function getISOWeek(d){
+  const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const dn=t.getUTCDay()||7;
+  t.setUTCDate(t.getUTCDate()+4-dn);
+  const ys=new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  return{year:t.getUTCFullYear(),week:Math.ceil(((t-ys)/86400000+1)/7)}
+}
+function getMondayOfWeek(year,week){
+  const jan4=new Date(Date.UTC(year,0,4));
+  const jan4Dow=jan4.getUTCDay()||7;
+  const monday=new Date(jan4);monday.setUTCDate(jan4.getUTCDate()-(jan4Dow-1)+(week-1)*7);
+  return new Date(monday.getUTCFullYear(),monday.getUTCMonth(),monday.getUTCDate());
+}
+
+const starPlugin={
+  id:'starMarker',
+  afterDatasetsDraw(chart,args,opts){
+    if(!opts||opts.point===undefined||opts.point<0)return;
+    const{ctx}=chart;
+    const meta=chart.getDatasetMeta(opts.datasetIdx??0);
+    const pt=meta.data[opts.point];
+    if(!pt)return;
+    ctx.save();
+    drawStar(ctx,pt.x,pt.y,opts.size||10,'#c1121f');
+    ctx.restore();
+  }
+};
+function drawStar(ctx,x,y,size,color){
+  ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=2;
+  ctx.beginPath();
+  for(let i=0;i<5;i++){
+    const a=Math.PI/2+i*Math.PI*2/5;
+    const ix=x+Math.cos(a)*size,iy=y-Math.sin(a)*size;
+    if(i===0)ctx.moveTo(ix,iy);else ctx.lineTo(ix,iy);
+    const a2=a+Math.PI/5;
+    ctx.lineTo(x+Math.cos(a2)*size*0.4,y-Math.sin(a2)*size*0.4);
+  }
+  ctx.closePath();ctx.fill();ctx.stroke();
+}
+Chart.register(starPlugin);
+
 function renderAnalytics(){
-  // 가장 최근 영업일 찾기 (모든 데이터 통틀어서)
   let latestDay=null;
-  Object.values(allMonthData).forEach(m=>{
+  Object.entries(allMonthData).forEach(([sheet,m])=>{
     m.parsedRows.forEach(r=>{
-      if(r.total>0&&(!latestDay||r.date>latestDay.date))latestDay={...r,sheet:Object.keys(allMonthData).find(k=>allMonthData[k]===m),colIdx:m.colIdx,headers:m.headers};
+      if(r.total>0&&(!latestDay||r.date>latestDay.date))latestDay={...r,sheet,colIdx:m.colIdx,headers:m.headers};
     });
   });
-
   if(!latestDay){$("alytBody").innerHTML='<div class="alytErr">매출 데이터가 없습니다</div>';return}
 
-  const dowK=latestDay.dow;
-  const dateStr=`${latestDay.date.getFullYear()}.${latestDay.date.getMonth()+1}.${latestDay.date.getDate()} (${dowK})`;
+  const allRows=Object.values(allMonthData).flatMap(m=>m.parsedRows).filter(r=>r.total>0);
+  const D=latestDay.date,DT=D.getTime();
+  const dowK=DOWK[D.getDay()];
+  const todayVal=latestDay.total;
 
-  // 전체 데이터에서 같은 요일 평균 (latestDay 자기 자신 제외)
-  const allRows=Object.values(allMonthData).flatMap(m=>m.parsedRows);
-  const sameDowAll=allRows.filter(r=>r.dow===dowK&&r.total>0&&r.date.getTime()!==latestDay.date.getTime());
-  const avgAll=sameDowAll.length?sameDowAll.reduce((s,r)=>s+r.total,0)/sameDowAll.length:0;
-  const diffAll=avgAll?((latestDay.total-avgAll)/avgAll*100):0;
+  // 메트릭 계산
+  const lwk=findRow(allRows,addDays(D,-7));
+  const lmo=findRow(allRows,addDays(D,-28));
+  const monthName=latestDay.sheet;
+  const monthRows=allMonthData[monthName].parsedRows.filter(r=>r.total>0);
+  const sameDowMonth=monthRows.filter(r=>r.date.getDay()===D.getDay()&&r.date.getTime()!==DT);
+  const monthAvg=sameDowMonth.length?sameDowMonth.reduce((s,r)=>s+r.total,0)/sameDowMonth.length:0;
+  const ly=findRow(allRows,addDays(D,-364));
+  const{week:wkNum}=getISOWeek(D);
 
-  // 같은 월의 같은 요일 평균
-  const curMonthName=latestDay.sheet;
-  const curMonthRows=allMonthData[curMonthName].parsedRows;
-  const sameDowMonth=curMonthRows.filter(r=>r.dow===dowK&&r.total>0&&r.date.getTime()!==latestDay.date.getTime());
-  const avgMonth=sameDowMonth.length?sameDowMonth.reduce((s,r)=>s+r.total,0)/sameDowMonth.length:0;
-  const diffMonth=avgMonth?((latestDay.total-avgMonth)/avgMonth*100):0;
+  function findYearDay(yr){
+    const m=getMondayOfWeek(yr,wkNum);
+    const offset=D.getDay()===0?6:D.getDay()-1;
+    return findRow(allRows,addDays(m,offset));
+  }
+  const y2023=findYearDay(2023),y2022=findYearDay(2022),y2021=findYearDay(2021);
 
-  // 분석 화면 HTML
+  function calc(target){
+    if(!target||!target.total)return null;
+    return{pct:((todayVal-target.total)/target.total)*100,amt:target.total};
+  }
+  const m_lwk=calc(lwk),m_lmo=calc(lmo);
+  const m_monthAvg=monthAvg?{pct:((todayVal-monthAvg)/monthAvg)*100,amt:monthAvg}:null;
+  const m_ly=calc(ly),m_y23=calc(y2023),m_y22=calc(y2022),m_y21=calc(y2021);
+
+  function metricRow(label,m,dim){
+    if(!m)return`<div class="mItem"><div class="mL ${dim?'dim':''}">${label}</div><div class="mR"><span class="mNd">데이터 없음</span></div></div>`;
+    return`<div class="mItem"><div class="mL ${dim?'dim':''}">${label}</div><div class="mR"><span class="mPct ${pctClass(m.pct)}">${pctText(m.pct)}</span><span class="mAmt">(${fmtK(m.amt)})</span></div></div>`;
+  }
+
   $("alytBody").innerHTML=`
-    <div class="todayBar">
+    <div class="heroBar">
       <div>
-        <div class="tbL">기준일 (가장 최근 영업일)</div>
-        <div class="tbD">${dateStr}</div>
+        <div class="hbT">기준일</div>
+        <div class="hbD">📅 ${D.getFullYear()}.${D.getMonth()+1}.${D.getDate()} (${dowK})</div>
       </div>
-      <div class="tbV">${fmt(latestDay.total)}</div>
+      <div class="hbV">${fmt(todayVal)}</div>
     </div>
 
-    <div class="metrics">
-      <div class="mCard">
-        <div class="mL">전체 ${dowK}요일 평균 대비</div>
-        <div class="mV ${diffAll>0?'up':diffAll<0?'down':'neutral'}">${diffAll>0?'+':''}${diffAll.toFixed(1)}%</div>
-        <div class="mSub">평균 ${fmtK(avgAll)} (${sameDowAll.length}일)</div>
+    <div class="topGrid">
+      <div class="payCard">
+        <h3>오늘 결제수단 비율</h3>
+        <div class="payToday">${fmtK(todayVal)}</div>
+        <div class="payBox"><canvas id="cPay"></canvas></div>
       </div>
-      <div class="mCard">
-        <div class="mL">이번달 ${dowK}요일 평균 대비</div>
-        <div class="mV ${diffMonth>0?'up':diffMonth<0?'down':'neutral'}">${avgMonth?(diffMonth>0?'+':'')+diffMonth.toFixed(1)+'%':'-'}</div>
-        <div class="mSub">${avgMonth?'평균 '+fmtK(avgMonth)+' ('+sameDowMonth.length+'일)':'데이터 부족'}</div>
+      <div class="metricCard">
+        <h3>비교 메트릭</h3>
+        <div class="mList">
+          ${metricRow("지난주 동일요일 대비",m_lwk)}
+          ${metricRow("저번달 동일요일 대비",m_lmo)}
+          ${metricRow(dowK+"요일 이번달 평균 대비",m_monthAvg)}
+          ${metricRow("작년 동일요일 대비",m_ly,true)}
+          ${metricRow("2023년 동일요일",m_y23,true)}
+          ${metricRow("2022년 동일요일",m_y22,true)}
+          ${metricRow("2021년 동일요일",m_y21,true)}
+        </div>
       </div>
     </div>
 
     <div class="chartCard">
-      <h3>오늘의 결제수단 비중<span class="ch3sub">${dateStr}</span></h3>
-      <div class="chartBox donut"><canvas id="cPay"></canvas></div>
+      <h3>저번주 비교<span id="lwkCum" class="cumul">주간 누적 -</span></h3>
+      <div class="ch3sub">월~일 7일간, ⭐ = 기준일</div>
+      <div class="chartBox"><canvas id="cLastWeek"></canvas></div>
     </div>
 
     <div class="chartCard">
-      <h3>연도별 월매출 추이<span class="ch3sub">최근 연도일수록 진하게</span></h3>
-      <div class="chartBox tall"><canvas id="cYear"></canvas></div>
+      <h3>작년 동일주 비교<span id="lyWkPct" class="cumul">주간 누적 -</span></h3>
+      <div class="ch3sub">올해 이번주 vs 작년 같은 주차 (364일 전)</div>
+      <div class="chartBox"><canvas id="cLastYearWeek"></canvas></div>
     </div>
 
     <div class="chartCard">
-      <h3>이번 주 vs 작년 같은 주<span class="ch3sub">일별 매출 비교</span></h3>
-      <div class="chartBox tall"><canvas id="cWeek"></canvas></div>
+      <h3>작년 비교<span id="lyAcPct" class="cumul">연간 누적 -</span></h3>
+      <div class="ch3sub">1월 1일 ~ 기준일까지 누적 매출 (올해 vs 작년)</div>
+      <div class="chartBox tall"><canvas id="cLastYearAccum"></canvas></div>
+    </div>
+
+    <div class="chartCard">
+      <h3>연도별 오늘 비교</h3>
+      <div class="ch3sub">기준일과 같은 주차의 같은 요일 매출 (연도별)</div>
+      <div class="chartBox"><canvas id="cYearToday"></canvas></div>
+    </div>
+
+    <div class="chartCard">
+      <h3>연도별 주차별 매출</h3>
+      <div class="ch3sub">매년 1주~52주의 주간 합계 (현재 연도 진하게)</div>
+      <div class="chartBox tall"><canvas id="cYearWeek"></canvas></div>
     </div>
   `;
 
   drawPayChart(latestDay);
-  drawYearChart();
-  drawWeekChart(latestDay);
+  drawLastWeekChart(allRows,latestDay);
+  drawLastYearWeekChart(allRows,latestDay);
+  drawLastYearAccumChart(allRows,latestDay);
+  drawYearTodayChart(allRows,latestDay,wkNum);
+  drawYearWeekChart(allRows,latestDay);
 }
 
-function drawPayChart(latestDay){
-  const ci=latestDay.colIdx,r=latestDay.raw;
+function destroyChart(name){
+  if(chartInstances[name]){chartInstances[name].destroy();delete chartInstances[name]}
+}
+
+function drawPayChart(latest){
+  const ci=latest.colIdx,r=latest.raw;
   const items=[
     {label:"카드",val:Number(r[ci.card])||0,color:"#6b8e5a"},
     {label:"현금",val:Number(r[ci.cash])||0,color:"#a3b18a"},
@@ -427,7 +527,7 @@ function drawPayChart(latestDay){
     {label:"배달 선결제",val:Number(r[ci.delivery])||0,color:"#e07856"}
   ].filter(x=>x.val>0);
 
-  if(chartInstances.pay)chartInstances.pay.destroy();
+  destroyChart("pay");
   const ctx=document.getElementById("cPay");
   if(!ctx||!items.length)return;
   chartInstances.pay=new Chart(ctx,{
@@ -435,58 +535,46 @@ function drawPayChart(latestDay){
     data:{labels:items.map(x=>x.label),datasets:[{data:items.map(x=>x.val),backgroundColor:items.map(x=>x.color),borderWidth:2,borderColor:"#fff"}]},
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{position:"right",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:10,padding:8}},
-        tooltip:{callbacks:{label:c=>`${c.label}: ₩${c.parsed.toLocaleString()}`}}
-      },
-      cutout:"60%"
+      plugins:{legend:{position:"right",labels:{font:{family:"Pretendard,sans-serif",size:10},boxWidth:8,padding:6}},tooltip:{callbacks:{label:c=>`${c.label}: ₩${c.parsed.toLocaleString()}`}}},
+      cutout:"58%"
     }
   });
 }
 
-function drawYearChart(){
-  // 연도별 월매출 합계
-  const yearMap={};
-  Object.entries(allMonthData).forEach(([name,m])=>{
-    const mm=name.match(/(\d{4})-(\d{2})/);
-    if(!mm)return;
-    const yr=mm[1],mo=parseInt(mm[2])-1;
-    if(!yearMap[yr])yearMap[yr]=new Array(12).fill(null);
-    const sum=m.parsedRows.reduce((s,r)=>s+r.total,0);
-    yearMap[yr][mo]=sum||null;
-  });
+function drawLastWeekChart(allRows,latest){
+  const D=latest.date;
+  const dow=D.getDay();
+  const monThis=addDays(D,dow===0?-6:-(dow-1));
+  const monLast=addDays(monThis,-7);
+  const labels=[],thisVals=[],lastVals=[];
+  let starIdx=-1;
+  for(let i=0;i<7;i++){
+    const dThis=addDays(monThis,i),dLast=addDays(monLast,i);
+    labels.push(`${dThis.getMonth()+1}/${dThis.getDate()} (${DOWK[dThis.getDay()]})`);
+    const rT=findRow(allRows,dThis),rL=findRow(allRows,dLast);
+    thisVals.push(rT&&rT.total>0?rT.total:null);
+    lastVals.push(rL&&rL.total>0?rL.total:null);
+    if(dThis.getTime()===D.getTime())starIdx=i;
+  }
+  const sumThis=thisVals.reduce((s,v)=>s+(v||0),0);
+  const sumLast=lastVals.reduce((s,v)=>s+(v||0),0);
+  const cumPct=sumLast?((sumThis-sumLast)/sumLast)*100:null;
+  const el=$("lwkCum");
+  if(cumPct!==null&&el){el.textContent=`주간 누적 ${pctText(cumPct)}`;el.className=`cumul ${pctClass(cumPct)}`}
 
-  const years=Object.keys(yearMap).sort();
-  const opacities={3:1,2:0.7,1:0.4,0:0.2};
-  const baseColor=[45,106,79];
-  const datasets=years.map((y,i)=>{
-    const rev=years.length-1-i; // newest = highest opacity
-    const op=rev===0?1:rev===1?0.6:rev===2?0.3:0.18;
-    const w=rev===0?2.8:rev===1?2:1.5;
-    return{
-      label:y+"년",
-      data:yearMap[y],
-      borderColor:`rgba(${baseColor.join(",")},${op})`,
-      backgroundColor:`rgba(${baseColor.join(",")},${op*0.1})`,
-      borderWidth:w,
-      tension:0.3,
-      pointRadius:rev===0?3:2,
-      pointHoverRadius:5,
-      spanGaps:true
-    };
-  });
-
-  if(chartInstances.year)chartInstances.year.destroy();
-  const ctx=document.getElementById("cYear");
-  if(!ctx)return;
-  chartInstances.year=new Chart(ctx,{
+  destroyChart("lw");
+  chartInstances.lw=new Chart(document.getElementById("cLastWeek"),{
     type:"line",
-    data:{labels:["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],datasets},
+    data:{labels,datasets:[
+      {label:"이번주",data:thisVals,borderColor:"#2d6a4f",backgroundColor:"rgba(45,106,79,0.08)",borderWidth:2.5,tension:0.3,pointRadius:3,spanGaps:true},
+      {label:"지난주",data:lastVals,borderColor:"#e07856",backgroundColor:"rgba(224,120,86,0.08)",borderWidth:2,tension:0.3,pointRadius:3,spanGaps:true,borderDash:[4,4]}
+    ]},
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{
-        legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:10}},
-        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmt(c.parsed.y)}`}}
+        legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:8}},
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y?fmt(c.parsed.y):'-'}`}},
+        starMarker:{point:starIdx,datasetIdx:0,size:9}
       },
       scales:{
         y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
@@ -496,50 +584,184 @@ function drawYearChart(){
   });
 }
 
-function drawWeekChart(latestDay){
-  // 이번 주 (월~일) — latestDay 기준
-  const d=latestDay.date;
-  const dow=d.getDay(); // 0=일
-  const monday=new Date(d);monday.setDate(d.getDate()-(dow===0?6:dow-1));monday.setHours(0,0,0,0);
-  const thisWeek=[];
-  for(let i=0;i<7;i++){const dd=new Date(monday);dd.setDate(monday.getDate()+i);thisWeek.push(dd)}
-  // 작년 같은 주 = 이번 주 시작일에서 364일 빼기 (요일 동일 유지)
-  const lastYearStart=new Date(monday);lastYearStart.setDate(monday.getDate()-364);
-  const lastWeek=[];
-  for(let i=0;i<7;i++){const dd=new Date(lastYearStart);dd.setDate(lastYearStart.getDate()+i);lastWeek.push(dd)}
+function drawLastYearWeekChart(allRows,latest){
+  const D=latest.date;
+  const dow=D.getDay();
+  const monThis=addDays(D,dow===0?-6:-(dow-1));
+  const monLY=addDays(monThis,-364);
+  const labels=[],thisVals=[],lyVals=[];
+  let starIdx=-1;
+  for(let i=0;i<7;i++){
+    const dThis=addDays(monThis,i),dLY=addDays(monLY,i);
+    labels.push(`${dThis.getMonth()+1}/${dThis.getDate()} (${DOWK[dThis.getDay()]})`);
+    const rT=findRow(allRows,dThis),rY=findRow(allRows,dLY);
+    thisVals.push(rT&&rT.total>0?rT.total:null);
+    lyVals.push(rY&&rY.total>0?rY.total:null);
+    if(dThis.getTime()===D.getTime())starIdx=i;
+  }
+  const sumT=thisVals.reduce((s,v)=>s+(v||0),0);
+  const sumY=lyVals.reduce((s,v)=>s+(v||0),0);
+  const cumPct=sumY?((sumT-sumY)/sumY)*100:null;
+  const el=$("lyWkPct");
+  if(cumPct!==null&&el){el.textContent=`주간 누적 ${pctText(cumPct)}`;el.className=`cumul ${pctClass(cumPct)}`}
 
-  const allRows=Object.values(allMonthData).flatMap(m=>m.parsedRows);
-  const findVal=(dt)=>{
-    const r=allRows.find(x=>x.date.getFullYear()===dt.getFullYear()&&x.date.getMonth()===dt.getMonth()&&x.date.getDate()===dt.getDate());
-    return r?r.total:null;
-  };
-
-  const labels=thisWeek.map(d=>`${d.getMonth()+1}/${d.getDate()} (${DOW[d.getDay()]})`);
-  const thisVals=thisWeek.map(findVal);
-  const lastVals=lastWeek.map(findVal);
-  const thisYr=monday.getFullYear(),lastYr=lastYearStart.getFullYear();
-
-  if(chartInstances.week)chartInstances.week.destroy();
-  const ctx=document.getElementById("cWeek");
-  if(!ctx)return;
-  chartInstances.week=new Chart(ctx,{
-    type:"bar",
-    data:{
-      labels,
-      datasets:[
-        {label:thisYr+"년",data:thisVals,backgroundColor:"rgba(45,106,79,0.85)",borderRadius:4},
-        {label:lastYr+"년",data:lastVals,backgroundColor:"rgba(193,18,31,0.45)",borderRadius:4}
-      ]
-    },
+  destroyChart("lyw");
+  chartInstances.lyw=new Chart(document.getElementById("cLastYearWeek"),{
+    type:"line",
+    data:{labels,datasets:[
+      {label:D.getFullYear()+"년 이번주",data:thisVals,borderColor:"#2d6a4f",backgroundColor:"rgba(45,106,79,0.08)",borderWidth:2.5,tension:0.3,pointRadius:3,spanGaps:true},
+      {label:(D.getFullYear()-1)+"년 같은주",data:lyVals,borderColor:"#9e8865",backgroundColor:"rgba(158,136,101,0.08)",borderWidth:2,tension:0.3,pointRadius:3,spanGaps:true,borderDash:[4,4]}
+    ]},
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{
-        legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:10}},
-        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y?fmt(c.parsed.y):'데이터 없음'}`}}
+        legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:8}},
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y?fmt(c.parsed.y):'-'}`}},
+        starMarker:{point:starIdx,datasetIdx:0,size:9}
       },
       scales:{
         y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
         x:{ticks:{font:{family:"Pretendard,sans-serif",size:10}}}
+      }
+    }
+  });
+}
+
+function drawLastYearAccumChart(allRows,latest){
+  const D=latest.date;
+  const yr=D.getFullYear();
+  const start=new Date(yr,0,1);
+  const startLY=new Date(yr-1,0,1);
+  const endLY=new Date(yr-1,D.getMonth(),D.getDate());
+
+  function buildAccum(s,e){
+    let sum=0;const arr=[];const d=new Date(s);
+    while(d<=e){
+      const r=findRow(allRows,d);
+      if(r&&r.total>0)sum+=r.total;
+      arr.push({date:new Date(d),sum});
+      d.setDate(d.getDate()+1);
+    }
+    return arr;
+  }
+  const accThis=buildAccum(start,D);
+  const accLY=buildAccum(startLY,endLY);
+
+  const labels=accThis.map(x=>`${x.date.getMonth()+1}/${x.date.getDate()}`);
+  const thisData=accThis.map(x=>x.sum);
+  const lyData=accLY.map(x=>x.sum);
+  while(lyData.length<thisData.length)lyData.push(null);
+
+  const finalThis=thisData[thisData.length-1]||0;
+  const finalLY=accLY.length?accLY[accLY.length-1].sum:0;
+  const cumPct=finalLY?((finalThis-finalLY)/finalLY)*100:null;
+  const el=$("lyAcPct");
+  if(el){
+    if(cumPct!==null){el.textContent=`연간 누적 ${pctText(cumPct)}`;el.className=`cumul ${pctClass(cumPct)}`}
+    else{el.textContent="작년 데이터 없음";el.className="cumul"}
+  }
+
+  const starIdx=thisData.length-1;
+
+  destroyChart("lya");
+  chartInstances.lya=new Chart(document.getElementById("cLastYearAccum"),{
+    type:"line",
+    data:{labels,datasets:[
+      {label:yr+"년 누적",data:thisData,borderColor:"#2d6a4f",backgroundColor:"rgba(45,106,79,0.1)",borderWidth:2.5,tension:0.2,pointRadius:0,fill:false},
+      {label:(yr-1)+"년 누적",data:lyData,borderColor:"#9e8865",backgroundColor:"rgba(158,136,101,0.05)",borderWidth:2,tension:0.2,pointRadius:0,borderDash:[4,4],fill:false}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:8}},
+        tooltip:{mode:"index",intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y?fmt(c.parsed.y):'-'}`}},
+        starMarker:{point:starIdx,datasetIdx:0,size:11}
+      },
+      scales:{
+        y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
+        x:{ticks:{font:{family:"Pretendard,sans-serif",size:9},maxTicksLimit:12,autoSkip:true}}
+      }
+    }
+  });
+}
+
+function drawYearTodayChart(allRows,latest,wkNum){
+  const D=latest.date;
+  const offset=D.getDay()===0?6:D.getDay()-1;
+  const years=[...new Set(allRows.map(r=>r.date.getFullYear()))].sort();
+  const labels=[],vals=[];
+  years.forEach(yr=>{
+    const m=getMondayOfWeek(yr,wkNum);
+    const target=addDays(m,offset);
+    const r=findRow(allRows,target);
+    const dowS=DOWK[target.getDay()];
+    labels.push(`${yr}년 (${dowS})`);
+    vals.push(r&&r.total>0?r.total:null);
+  });
+
+  destroyChart("yt");
+  chartInstances.yt=new Chart(document.getElementById("cYearToday"),{
+    type:"bar",
+    data:{labels,datasets:[{
+      label:"매출",data:vals,
+      backgroundColor:vals.map((_,i)=>i===vals.length-1?"#2d6a4f":"rgba(107,142,90,0.6)"),
+      borderRadius:4,
+      borderWidth:1,
+      borderColor:vals.map((_,i)=>i===vals.length-1?"#1a4a32":"rgba(107,142,90,0.8)")
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y?fmt(c.parsed.y):'데이터 없음'}}},
+      scales:{
+        y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
+        x:{ticks:{font:{family:"Pretendard,sans-serif",size:11}}}
+      }
+    }
+  });
+}
+
+function drawYearWeekChart(allRows,latest){
+  const yearWeekMap={};
+  allRows.forEach(r=>{
+    const{year,week}=getISOWeek(r.date);
+    if(!yearWeekMap[year])yearWeekMap[year]=new Array(54).fill(null);
+    if(yearWeekMap[year][week]===null)yearWeekMap[year][week]=0;
+    yearWeekMap[year][week]+=r.total;
+  });
+
+  const years=Object.keys(yearWeekMap).map(Number).sort();
+  const labels=[];for(let i=1;i<=52;i++)labels.push(i+"주");
+  const baseColor=[45,106,79];
+  const datasets=years.map((y,i)=>{
+    const rev=years.length-1-i;
+    const op=rev===0?1:rev===1?0.55:rev===2?0.3:0.18;
+    const w=rev===0?2.5:rev===1?2:1.5;
+    return{
+      label:y+"년",
+      data:yearWeekMap[y].slice(1,53),
+      borderColor:`rgba(${baseColor.join(",")},${op})`,
+      backgroundColor:`rgba(${baseColor.join(",")},${op*0.08})`,
+      borderWidth:w,
+      tension:0.25,
+      pointRadius:0,
+      pointHoverRadius:4,
+      spanGaps:false
+    };
+  });
+
+  destroyChart("yw");
+  chartInstances.yw=new Chart(document.getElementById("cYearWeek"),{
+    type:"line",
+    data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:8}},
+        tooltip:{mode:"index",intersect:false,callbacks:{label:c=>c.parsed.y?`${c.dataset.label}: ${fmt(c.parsed.y)}`:`${c.dataset.label}: -`}}
+      },
+      scales:{
+        y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
+        x:{ticks:{font:{family:"Pretendard,sans-serif",size:9},maxTicksLimit:13,autoSkip:true}}
       }
     }
   });
