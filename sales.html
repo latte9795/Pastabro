@@ -11,6 +11,7 @@
   --warm:#f5f0eb;--card:#fff;--text:#1a1a1a;--sub:#666;--muted:#999;
   --border:#e0d8cf;--accent:#6b8e5a;--accent2:#a3b18a;--green:#2d6a4f;
   --red:#c1121f;--blue:#1e4d8c;--blight:#f0ebe4;--cream:#faf7f2;
+  --hall:#e07856;--delivery:#1e4d8c;
   --sans:'Pretendard',system-ui,-apple-system,sans-serif;
   --serif:'Playfair Display',Georgia,serif;
 }
@@ -71,7 +72,21 @@ tr.holiday td{color:var(--red)}
 .payCard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
 .payCard h3{font-size:12px;font-weight:600;color:var(--sub);margin-bottom:6px}
 .payToday{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--green);margin-bottom:8px}
-.payBox{position:relative;height:240px}
+.payBox{position:relative;height:200px;margin-bottom:8px}
+
+/* 세부 바 (홀/배달 각각) */
+.payDetail{margin-top:10px}
+.payDetail .pdRow{margin-bottom:10px}
+.payDetail .pdRow:last-child{margin-bottom:0}
+.payDetail .pdLabel{font-size:11px;font-weight:600;margin-bottom:4px;display:flex;justify-content:space-between;align-items:baseline}
+.payDetail .pdLabel .pdL{}
+.payDetail .pdLabel .pdAmt{font-size:10px;color:var(--sub);font-weight:500;font-family:var(--serif)}
+.payDetail .pdBar{height:18px;border-radius:4px;display:flex;overflow:hidden;background:var(--blight)}
+.payDetail .pdSeg{height:100%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;border-right:1px solid rgba(255,255,255,0.4)}
+.payDetail .pdSeg:last-child{border-right:none}
+.payDetail .pdLegend{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px;font-size:10px;color:var(--sub)}
+.payDetail .pdLegend .pdLI{display:inline-flex;align-items:center;gap:4px}
+.payDetail .pdLegend .pdSwatch{width:10px;height:10px;border-radius:2px;display:inline-block}
 
 .metricCard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
 .metricCard h3{font-size:12px;font-weight:600;color:var(--sub);margin-bottom:10px}
@@ -96,10 +111,19 @@ tr.holiday td{color:var(--red)}
 .chartCard .ch3sub{font-size:11px;color:var(--muted);margin-bottom:8px}
 .chartBox{position:relative;height:240px}
 .chartBox.tall{height:280px}
+
+/* 비교 차트 + 옆에 누적 스택바 */
+.compareGrid{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+@media(max-width:680px){.compareGrid{grid-template-columns:1fr}}
+.compareGrid .cgLine{position:relative;height:240px}
+.compareGrid .cgStack{position:relative;height:240px}
+
 .yearChks{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .yearChk{font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:999px;background:var(--card);user-select:none}
 .yearChk input{cursor:pointer;margin:0}
 .yearChk:hover{background:var(--blight)}
+
+.zoomHint{font-size:10px;color:var(--muted);margin-top:6px;text-align:right}
 
 .alytLoad,.alytErr{text-align:center;padding:40px 20px;font-size:13px;color:var(--muted)}
 .alytErr{color:var(--red)}
@@ -154,6 +178,8 @@ tr.holiday td{color:var(--red)}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 <script>
 const SHEET_ID="13w8Z3XFM3EqGpx-YGuW4YIx5H9Qk4Z64Gu1jvT-siYw";
 const API_KEY="AIzaSyAobLBmEc8I8zGJdpjOVQxX3_347TZNJJo";
@@ -163,10 +189,16 @@ const fmt=n=>{if(n===null||n===undefined||n==="")return"-";const v=Number(n);ret
 const fmtK=n=>{if(!n)return"₩0";if(n>=10000000)return"₩"+(n/10000000).toFixed(1)+"천만";if(n>=10000)return"₩"+(n/10000).toFixed(0)+"만";return"₩"+n.toLocaleString()};
 const DOWK=["일","월","화","수","목","금","토"];
 
-// 카테고리 라벨 (헤더 라벨로 사용 안 하고 카테고리 표시용)
-const CATEGORY_LABELS=new Set(["홀","배달","결제","결제수단","합계"]);
+// 카테고리 라벨
+const CATEGORY_LABELS=new Set(["홀","배달","결제","결제수단","합계","매출"]);
 // 합계성 컬럼 (결제수단 비율에서 제외)
 const TOTAL_COLS=new Set(["총 매출","총매출","vat","VAT","순매출","부가세"]);
+
+// 시트는 4~34행이 데이터, 35행이 총매출 (1-indexed)
+// 0-indexed로는 dataRows 인덱스 3~33, summary 34
+const DATA_ROW_START=3; // 0-indexed
+const DATA_ROW_END=33;  // inclusive
+const SUMMARY_ROW=34;
 
 function num(v){
   if(v===null||v===undefined)return 0;
@@ -182,11 +214,10 @@ function num(v){
 
 function txt(v){
   if(v===null||v===undefined)return "";
-  if(typeof v==="number")return looksLikeNumberValue(v)?"":String(v);
+  if(typeof v==="number")return String(v);
   if(typeof v==="string")return v.trim();
   return String(v).trim();
 }
-function looksLikeNumberValue(v){return typeof v==="number"&&!isNaN(v)}
 function looksLikeData(s){
   if(typeof s!=="string")return false;
   const t=s.trim();
@@ -198,7 +229,7 @@ function looksLikeData(s){
   return false;
 }
 
-// "날짜" 단어가 있는 행을 헤더 행으로
+// 헤더 행 (보통 row 2, 0-indexed)
 function findHeaderIdx(rows){
   for(let i=0;i<Math.min(rows.length,5);i++){
     const r=rows[i];if(!r)continue;
@@ -207,7 +238,7 @@ function findHeaderIdx(rows){
   return 1;
 }
 
-// 헤더 합치기: main이 빈칸이면 위/아래 행에서 보충, 단 카테고리 라벨이면 위 행을 우선
+// 헤더 합치기: 카테고리 행 + 실제 헤더 행을 통합
 function buildHeaders(rows,hIdx){
   const main=rows[hIdx]||[];
   const above=hIdx>0?(rows[hIdx-1]||[]):[];
@@ -218,14 +249,12 @@ function buildHeaders(rows,hIdx){
     const mTxt=txt(main[i]);
     const aTxt=txt(above[i]);
     const bTxt=txt(below[i]);
-    // main이 카테고리 라벨이면 위 행(실제 헤더)을 우선 사용
     if(mTxt&&CATEGORY_LABELS.has(mTxt)){
       if(aTxt&&!looksLikeData(aTxt)&&!CATEGORY_LABELS.has(aTxt)){out.push(aTxt);continue}
       if(bTxt&&!looksLikeData(bTxt)&&!CATEGORY_LABELS.has(bTxt)){out.push(bTxt);continue}
       out.push(mTxt); continue;
     }
     if(mTxt&&!looksLikeData(mTxt)){out.push(mTxt); continue}
-    // main이 비어있거나 데이터처럼 보임: 위/아래에서 보충
     if(aTxt&&!looksLikeData(aTxt)&&!CATEGORY_LABELS.has(aTxt)){out.push(aTxt); continue}
     if(bTxt&&!looksLikeData(bTxt)&&!CATEGORY_LABELS.has(bTxt)){out.push(bTxt); continue}
     out.push("");
@@ -233,9 +262,8 @@ function buildHeaders(rows,hIdx){
   return out;
 }
 
-// 카테고리 위치: 시트의 raw 행에서 "홀", "배달" 라벨 위치
+// "홀"/"배달" 카테고리 컬럼 위치 찾기
 function findCategoryRanges(rows){
-  // hIdx 행과 그 위/아래에서 카테고리 라벨 위치 찾기
   let holIdx=-1,delIdx=-1;
   for(let r=0;r<Math.min(rows.length,5);r++){
     const row=rows[r];if(!row)continue;
@@ -248,6 +276,7 @@ function findCategoryRanges(rows){
   return{holIdx,delIdx};
 }
 
+// 행이 데이터인지 (날짜 형식)
 function isDataRow(r){
   if(!r||!r.length)return false;
   const v=r[0];
@@ -261,7 +290,7 @@ function isDataRow(r){
   return false;
 }
 
-// 행에서 총매출 가져오기 (없으면 vat+순매출 또는 vat*10 fallback)
+// 행에서 총매출 가져오기 (없으면 vat+순매출 fallback)
 function getRowTotal(r,ci){
   let v=num(r[ci.total]);
   if(v>0)return v;
@@ -272,21 +301,27 @@ function getRowTotal(r,ci){
   return 0;
 }
 
-// 카테고리 기반 합계
-function calcHallSum(r,catRanges){
+// 홀/배달 합계 (카테고리 기반)
+function calcHallSum(r,catRanges,headers){
   const{holIdx,delIdx}=catRanges;
   if(holIdx<0)return 0;
   const start=holIdx;
   const end=delIdx>0?delIdx-1:r.length-1;
   let sum=0;
-  for(let i=start;i<=end;i++)sum+=num(r[i]);
+  for(let i=start;i<=end;i++){
+    if(headers&&TOTAL_COLS.has(txt(headers[i])))continue;
+    sum+=num(r[i]);
+  }
   return sum;
 }
-function calcDeliverySum(r,catRanges){
+function calcDeliverySum(r,catRanges,headers){
   const{delIdx}=catRanges;
   if(delIdx<0)return 0;
   let sum=0;
-  for(let i=delIdx;i<r.length;i++)sum+=num(r[i]);
+  for(let i=delIdx;i<r.length;i++){
+    if(headers&&TOTAL_COLS.has(txt(headers[i])))continue;
+    sum+=num(r[i]);
+  }
   return sum;
 }
 
@@ -338,21 +373,32 @@ function scrollChipIntoView(chip){
   else if(cl+cw>sl+nw)nav.scrollTo({left:cl+cw-nw+10,behavior:"smooth"});
 }
 
+// 시트 파싱: 4~34행이 데이터, 35행이 총매출 (1-indexed)
+// 단 행이 그보다 적으면 그 만큼만 (예: 30일 월)
 function parseSheet(rows){
   const hIdx=findHeaderIdx(rows);
   const headers=buildHeaders(rows,hIdx);
   const catRanges=findCategoryRanges(rows);
-  let dataRows=rows.slice(hIdx+1);
-  // 총매출 행 분리
+  // 0-indexed로 DATA_ROW_START=3 (4행), DATA_ROW_END=33 (34행), SUMMARY=34 (35행)
+  // 단 행 부족하면 가능한 만큼
+  const lastIdx=Math.min(rows.length-1,DATA_ROW_END);
+  let dataRows=[];
+  for(let i=DATA_ROW_START;i<=lastIdx;i++){
+    const r=rows[i];
+    if(r&&isDataRow(r))dataRows.push(r);
+  }
+  // 총매출 행: 정확히 SUMMARY_ROW(35행) 또는 첫 셀에 "총매출" 있는 행
   let summaryRow=null;
-  for(let i=dataRows.length-1;i>=0;i--){
-    const v=dataRows[i]&&dataRows[i][0];
-    if(typeof v==="string"&&v.includes("총매출")){
-      summaryRow=dataRows.splice(i,1)[0];break;
+  if(rows[SUMMARY_ROW]&&typeof rows[SUMMARY_ROW][0]==="string"&&rows[SUMMARY_ROW][0].includes("총매출")){
+    summaryRow=rows[SUMMARY_ROW];
+  }else{
+    // fallback: 마지막 5행 안에서 "총매출" 찾기
+    for(let i=Math.min(rows.length-1,SUMMARY_ROW+5);i>=Math.max(DATA_ROW_END,0);i--){
+      if(rows[i]&&typeof rows[i][0]==="string"&&rows[i][0].includes("총매출")){
+        summaryRow=rows[i];break;
+      }
     }
   }
-  // 데이터 행만
-  dataRows=dataRows.filter(isDataRow);
   return{hIdx,headers,catRanges,dataRows,summaryRow};
 }
 
@@ -387,13 +433,11 @@ async function loadSheet(name){
       `rows.length: ${rows.length}\n`+
       `hIdx: ${parsed.hIdx}\n`+
       `catRanges: ${JSON.stringify(parsed.catRanges)}\n`+
-      `row[0]: ${JSON.stringify(rows[0]||[])}\n`+
-      `row[1]: ${JSON.stringify(rows[1]||[])}\n`+
-      `row[2]: ${JSON.stringify(rows[2]||[])}\n`+
-      `row[3]: ${JSON.stringify(rows[3]||[])}\n`+
       `merged headers: ${JSON.stringify(parsed.headers)}\n`+
       `dataRows count: ${parsed.dataRows.length}\n`+
-      `first dataRow: ${JSON.stringify(parsed.dataRows[0]||[])}`;
+      `first dataRow: ${JSON.stringify(parsed.dataRows[0]||[])}\n`+
+      `last dataRow: ${JSON.stringify(parsed.dataRows[parsed.dataRows.length-1]||[])}\n`+
+      `summaryRow: ${JSON.stringify(parsed.summaryRow||[])}`;
   }
 
   renderSummary(parsed);
@@ -427,9 +471,7 @@ function renderSummary(parsed){
     totalSales+=getRowTotal(r,ci);
     cardSales+=num(r[ci.card]);
     cashSales+=num(r[ci.cash]);
-    // 배달: 카테고리 기반 합산 (배달 라벨 이후 모든 컬럼)
-    const dlyCat=calcDeliverySum(r,catRanges);
-    deliverySales+=dlyCat;
+    deliverySales+=calcDeliverySum(r,catRanges,headers);
   });
   sa.style.display="grid";
   sa.innerHTML=`
@@ -532,7 +574,10 @@ async function loadAnalytics(){
         }
       }
       if(dt&&!isNaN(dt))dt.setHours(0,0,0,0);
-      return{date:dt,dow:r[1]||"",total:getRowTotal(r,ci),raw:r};
+      const total=getRowTotal(r,ci);
+      const hall=calcHallSum(r,parsed.catRanges,parsed.headers);
+      const delivery=calcDeliverySum(r,parsed.catRanges,parsed.headers);
+      return{date:dt,dow:r[1]||"",total,hall,delivery,raw:r};
     }).filter(r=>r.date&&!isNaN(r.date));
     allMonthData[name]={headers:parsed.headers,catRanges:parsed.catRanges,parsedRows,colIdx:ci};
   });
@@ -626,7 +671,7 @@ function renderAnalytics(baseDay){
     const offset=D.getDay()===0?6:D.getDay()-1;
     return findRow(allRows,addDays(m,offset));
   }
-  const y2023=findYearDay(2023),y2022=findYearDay(2022),y2021=findYearDay(2021);
+  const y2024=findYearDay(2024),y2023=findYearDay(2023),y2022=findYearDay(2022),y2021=findYearDay(2021);
 
   function calc(target){
     if(!target||!target.total)return null;
@@ -634,7 +679,7 @@ function renderAnalytics(baseDay){
   }
   const m_lwk=calc(lwk),m_lmo=calc(lmo);
   const m_dowAvg=dowAvg?{pct:((todayVal-dowAvg)/dowAvg)*100,amt:dowAvg}:null;
-  const m_ly=calc(ly),m_y23=calc(y2023),m_y22=calc(y2022),m_y21=calc(y2021);
+  const m_ly=calc(ly),m_y24=calc(y2024),m_y23=calc(y2023),m_y22=calc(y2022),m_y21=calc(y2021);
 
   function metricRow(label,m,dim){
     if(!m)return`<div class="mItem"><div class="mL ${dim?'dim':''}">${label}</div><div class="mR"><span class="mNd">데이터 없음</span></div></div>`;
@@ -661,6 +706,7 @@ function renderAnalytics(baseDay){
         <h3>오늘 결제수단 비율</h3>
         <div class="payToday">${fmtK(todayVal)}</div>
         <div class="payBox"><canvas id="cPay"></canvas></div>
+        <div class="payDetail" id="payDetail"></div>
       </div>
       <div class="metricCard">
         <h3>비교 메트릭</h3>
@@ -669,6 +715,7 @@ function renderAnalytics(baseDay){
           ${metricRow("저번달 동일요일 대비",m_lmo)}
           ${metricRow(dowK+"요일 평균 대비",m_dowAvg)}
           ${metricRow("작년 동일요일 대비",m_ly,true)}
+          ${metricRow("2024년 동일요일",m_y24,true)}
           ${metricRow("2023년 동일요일",m_y23,true)}
           ${metricRow("2022년 동일요일",m_y22,true)}
           ${metricRow("2021년 동일요일",m_y21,true)}
@@ -679,26 +726,36 @@ function renderAnalytics(baseDay){
     <div class="chartCard">
       <h3>저번주 비교<span id="lwkCum" class="cumul">누적 -</span></h3>
       <div class="ch3sub">월~기준일까지의 누적 비교, ⭐ = 기준일</div>
-      <div class="chartBox"><canvas id="cLastWeek"></canvas></div>
+      <div class="compareGrid">
+        <div class="cgLine"><canvas id="cLastWeek"></canvas></div>
+        <div class="cgStack"><canvas id="cLastWeekStack"></canvas></div>
+      </div>
     </div>
 
     <div class="chartCard">
       <h3>저번달 비교<span id="lmCum" class="cumul">누적 -</span></h3>
       <div class="ch3sub">이번주 vs 4주 전 (저번달 동일 주차)</div>
-      <div class="chartBox"><canvas id="cLastMonth"></canvas></div>
+      <div class="compareGrid">
+        <div class="cgLine"><canvas id="cLastMonth"></canvas></div>
+        <div class="cgStack"><canvas id="cLastMonthStack"></canvas></div>
+      </div>
     </div>
 
     <div class="chartCard">
       <h3>작년 동일주 비교<span id="lyWkPct" class="cumul">누적 -</span></h3>
       <div class="ch3sub">올해 이번주 vs 작년 같은 주차 (364일 전)</div>
-      <div class="chartBox"><canvas id="cLastYearWeek"></canvas></div>
+      <div class="compareGrid">
+        <div class="cgLine"><canvas id="cLastYearWeek"></canvas></div>
+        <div class="cgStack"><canvas id="cLastYearWeekStack"></canvas></div>
+      </div>
     </div>
 
     <div class="chartCard">
       <h3>누적 비교<span id="acCum" class="cumul">누적 -</span></h3>
-      <div class="ch3sub">1월 1일 ~ 기준일까지 일별 누적 매출. 연도 체크박스로 비교</div>
+      <div class="ch3sub">1월 1일 ~ 12월 31일 일별 누적. 마우스 휠 또는 핀치로 확대, 드래그로 이동. 더블클릭하면 초기화</div>
       <div class="yearChks" id="yearChks"></div>
       <div class="chartBox tall"><canvas id="cAccum"></canvas></div>
+      <div class="zoomHint">💡 휠/핀치로 줌 · 드래그로 이동 · 더블클릭으로 초기화</div>
     </div>
 
     <div class="chartCard">
@@ -730,9 +787,10 @@ function renderAnalytics(baseDay){
   });
 
   drawPayChart(baseDay);
-  drawLastWeekChart(allRows,baseDay);
-  drawLastMonthChart(allRows,baseDay);
-  drawLastYearWeekChart(allRows,baseDay);
+  drawCompareCharts(allRows,baseDay,-7,"이번주","지난주","#e07856","lwkCum","cLastWeek","cLastWeekStack","lw","lws");
+  drawCompareCharts(allRows,baseDay,-28,"이번주","저번달 같은주","#9e6850","lmCum","cLastMonth","cLastMonthStack","lm","lms");
+  const yr=baseDay.date.getFullYear();
+  drawCompareCharts(allRows,baseDay,-364,yr+"년 이번주",(yr-1)+"년 같은주","#9e8865","lyWkPct","cLastYearWeek","cLastYearWeekStack","lyw","lyws");
   drawAccumChart(allRows,baseDay);
   drawYearWeekChart(allRows,baseDay);
 }
@@ -741,90 +799,114 @@ function destroyChart(name){
   if(chartInstances[name]){chartInstances[name].destroy();delete chartInstances[name]}
 }
 
-// 결제수단 비율: 헤더의 모든 결제 항목 컬럼을 동적으로 모음
+// 결제수단: 도넛(홀 vs 배달) + 세부 바 2개
 function drawPayChart(latest){
   const r=latest.raw;
   const headers=latest.headers||[];
   const catRanges=latest.catRanges||{holIdx:-1,delIdx:-1};
-  // 결제수단 후보 컬럼 (총매출/vat/순매출 제외, 카테고리 라벨 제외, 0 이상)
-  const items=[];
-  for(let i=2;i<headers.length;i++){
-    const h=(headers[i]||"").toString().trim();
-    if(!h||TOTAL_COLS.has(h)||CATEGORY_LABELS.has(h))continue;
-    const v=num(r[i]);
-    if(v<=0)continue;
-    items.push({label:h,val:v,idx:i});
-  }
-  // 같은 라벨 합산 (드물지만 가능)
-  const merged={};
-  items.forEach(it=>{
-    if(merged[it.label])merged[it.label].val+=it.val;
-    else merged[it.label]={label:it.label,val:it.val,idx:it.idx};
-  });
-  const finalItems=Object.values(merged);
-  const total=finalItems.reduce((s,x)=>s+x.val,0);
-  finalItems.forEach(it=>{it.pct=total?(it.val/total*100):0});
 
-  // 색상: 홀 vs 배달 카테고리에 따라 다른 톤
-  const colorsHol=["#6b8e5a","#a3b18a","#588157","#c4a77d","#9e8865","#7a6650","#5a7a4a"];
-  const colorsDel=["#e07856","#d77a5e","#c1121f","#86a87a","#5fa8d3","#a8c686","#7a6c8a"];
-  let hi=0,di=0;
-  finalItems.forEach(it=>{
-    if(catRanges.delIdx>=0&&it.idx>=catRanges.delIdx){
-      it.color=colorsDel[di%colorsDel.length];di++;
-    }else{
-      it.color=colorsHol[hi%colorsHol.length];hi++;
-    }
-  });
+  // 홀/배달 합계
+  const hallSum=calcHallSum(r,catRanges,headers);
+  const delSum=calcDeliverySum(r,catRanges,headers);
+  const total=hallSum+delSum;
 
+  // 도넛
   destroyChart("pay");
   const ctx=document.getElementById("cPay");
-  if(!ctx||!finalItems.length)return;
-  chartInstances.pay=new Chart(ctx,{
-    type:"doughnut",
-    data:{
-      labels:finalItems.map(x=>x.label),
-      datasets:[{data:finalItems.map(x=>x.val),backgroundColor:finalItems.map(x=>x.color),borderWidth:2,borderColor:"#fff"}]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{
-          position:"right",
-          labels:{
-            font:{family:"Pretendard,sans-serif",size:10},boxWidth:8,padding:6,
-            generateLabels:(chart)=>{
-              const data=chart.data;
-              const sum=data.datasets[0].data.reduce((s,v)=>s+v,0);
-              return data.labels.map((label,i)=>{
-                const val=data.datasets[0].data[i];
-                const pct=sum?(val/sum*100).toFixed(1):"0.0";
-                return{
-                  text:`${label} ${pct}%`,
-                  fillStyle:data.datasets[0].backgroundColor[i],
-                  strokeStyle:data.datasets[0].backgroundColor[i],
-                  lineWidth:0,
-                  hidden:false,
-                  index:i
-                };
-              });
+  if(!ctx)return;
+  if(total>0){
+    chartInstances.pay=new Chart(ctx,{
+      type:"doughnut",
+      data:{
+        labels:["홀","배달"],
+        datasets:[{data:[hallSum,delSum],backgroundColor:["#e07856","#1e4d8c"],borderWidth:2,borderColor:"#fff"}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{
+            position:"bottom",
+            labels:{
+              font:{family:"Pretendard,sans-serif",size:11},boxWidth:10,padding:8,
+              generateLabels:(chart)=>{
+                const sum=chart.data.datasets[0].data.reduce((s,v)=>s+v,0);
+                return chart.data.labels.map((label,i)=>{
+                  const val=chart.data.datasets[0].data[i];
+                  const pct=sum?(val/sum*100).toFixed(1):"0.0";
+                  return{
+                    text:`${label} ${pct}%`,
+                    fillStyle:chart.data.datasets[0].backgroundColor[i],
+                    strokeStyle:chart.data.datasets[0].backgroundColor[i],
+                    lineWidth:0,index:i
+                  };
+                });
+              }
             }
-          }
-        },
-        tooltip:{
-          callbacks:{label:c=>{
+          },
+          tooltip:{callbacks:{label:c=>{
             const sum=c.dataset.data.reduce((s,v)=>s+v,0);
             const pct=sum?(c.parsed/sum*100).toFixed(1):0;
             return `${c.label}: ₩${c.parsed.toLocaleString()} (${pct}%)`;
-          }}
-        }
-      },
-      cutout:"55%"
+          }}}
+        },
+        cutout:"55%"
+      }
+    });
+  }
+
+  // 세부 바
+  function buildItems(startIdx,endIdx,colors){
+    const items=[];
+    let ci=0;
+    for(let i=startIdx;i<=endIdx&&i<headers.length;i++){
+      const h=txt(headers[i]);
+      if(!h||TOTAL_COLS.has(h)||CATEGORY_LABELS.has(h))continue;
+      const v=num(r[i]);
+      if(v<=0)continue;
+      items.push({label:h,val:v,color:colors[ci%colors.length]});
+      ci++;
     }
-  });
+    return items;
+  }
+  const hallColors=["#e07856","#c4655a","#9e6850","#d77a5e","#a85540","#7a4530"];
+  const delColors=["#1e4d8c","#3a6ba8","#5fa8d3","#5a8aa6","#365e94","#7baacc"];
+
+  let hallItems=[],delItems=[];
+  if(catRanges.holIdx>=0){
+    const hEnd=catRanges.delIdx>0?catRanges.delIdx-1:headers.length-1;
+    hallItems=buildItems(catRanges.holIdx,hEnd,hallColors);
+  }
+  if(catRanges.delIdx>=0){
+    delItems=buildItems(catRanges.delIdx,headers.length-1,delColors);
+  }
+
+  function renderBar(items,labelText,totalVal){
+    if(!items.length)return "";
+    const sum=items.reduce((s,x)=>s+x.val,0);
+    if(sum<=0)return "";
+    const segs=items.map(it=>{
+      const pct=sum?(it.val/sum*100):0;
+      const txt=pct>=8?`${it.label} ${pct.toFixed(0)}%`:'';
+      return `<div class="pdSeg" style="background:${it.color};width:${pct}%" title="${it.label}: ₩${it.val.toLocaleString()} (${pct.toFixed(1)}%)">${txt}</div>`;
+    }).join("");
+    const legend=items.map(it=>{
+      const pct=sum?(it.val/sum*100).toFixed(1):0;
+      return `<span class="pdLI"><span class="pdSwatch" style="background:${it.color}"></span>${it.label} ${pct}%</span>`;
+    }).join("");
+    return `<div class="pdRow">
+      <div class="pdLabel"><span class="pdL">${labelText}</span><span class="pdAmt">${fmtK(sum)}</span></div>
+      <div class="pdBar">${segs}</div>
+      <div class="pdLegend">${legend}</div>
+    </div>`;
+  }
+
+  $("payDetail").innerHTML=
+    renderBar(hallItems,"홀 매출 세부",hallSum)+
+    renderBar(delItems,"배달 매출 세부",delSum);
 }
 
-function build7DayCompare(allRows,latest,daysOffset,thisLabel,otherLabel,otherColor,cumElId){
+// 비교 차트: 라인(2/3) + 누적 스택바(1/3)
+function drawCompareCharts(allRows,latest,daysOffset,thisLabel,otherLabel,otherColor,cumElId,lineCanvasId,stackCanvasId,lineKey,stackKey){
   const D=latest.date;
   const dow=D.getDay();
   const monThis=addDays(D,dow===0?-6:-(dow-1));
@@ -832,7 +914,10 @@ function build7DayCompare(allRows,latest,daysOffset,thisLabel,otherLabel,otherCo
   const dayOffset=dow===0?6:dow-1;
 
   const labels=[],thisVals=[],otherVals=[],thisDates=[],otherDates=[];
-  let starIdx=-1,sumThis=0,sumOther=0;
+  let starIdx=-1;
+  let sumThisHall=0,sumThisDel=0,sumOtherHall=0,sumOtherDel=0;
+  let sumThisTotal=0,sumOtherTotal=0;
+
   for(let i=0;i<7;i++){
     const dThis=addDays(monThis,i),dOther=addDays(monOther,i);
     labels.push(`${dThis.getMonth()+1}/${dThis.getDate()}\n(${DOWK[dThis.getDay()]})`);
@@ -843,34 +928,32 @@ function build7DayCompare(allRows,latest,daysOffset,thisLabel,otherLabel,otherCo
     otherVals.push(rO&&rO.total>0?rO.total:null);
     if(dThis.getTime()===D.getTime())starIdx=i;
     if(i<=dayOffset){
-      if(rT)sumThis+=rT.total;
-      if(rO)sumOther+=rO.total;
+      if(rT){sumThisHall+=rT.hall;sumThisDel+=rT.delivery;sumThisTotal+=rT.total}
+      if(rO){sumOtherHall+=rO.hall;sumOtherDel+=rO.delivery;sumOtherTotal+=rO.total}
     }
   }
-  const cumPct=sumOther?((sumThis-sumOther)/sumOther)*100:null;
+  const cumPct=sumOtherTotal?((sumThisTotal-sumOtherTotal)/sumOtherTotal)*100:null;
   const el=$(cumElId);
   const dowKr=DOWK[D.getDay()];
   if(el){
     if(cumPct!==null){el.textContent=`${dowKr}요일까지 누적 ${pctText(cumPct)}`;el.className=`cumul ${pctClass(cumPct)}`}
     else el.textContent=`${dowKr}요일까지 누적 -`;
   }
-  return{labels,thisVals,otherVals,thisDates,otherDates,starIdx,thisLabel,otherLabel,otherColor};
-}
 
-function drawCompareChart(canvasId,d,chartKey){
-  destroyChart(chartKey);
-  chartInstances[chartKey]=new Chart(document.getElementById(canvasId),{
+  // 라인 차트
+  destroyChart(lineKey);
+  chartInstances[lineKey]=new Chart(document.getElementById(lineCanvasId),{
     type:"line",
-    data:{labels:d.labels,datasets:[
-      {label:d.thisLabel,data:d.thisVals,dates:d.thisDates,borderColor:"#2d6a4f",backgroundColor:"rgba(45,106,79,0.08)",borderWidth:2.5,tension:0.3,pointRadius:3,spanGaps:true},
-      {label:d.otherLabel,data:d.otherVals,dates:d.otherDates,borderColor:d.otherColor,backgroundColor:d.otherColor+"15",borderWidth:2,tension:0.3,pointRadius:3,spanGaps:true,borderDash:[4,4]}
+    data:{labels,datasets:[
+      {label:thisLabel,data:thisVals,dates:thisDates,borderColor:"#2d6a4f",backgroundColor:"rgba(45,106,79,0.08)",borderWidth:2.5,tension:0.3,pointRadius:3,spanGaps:true},
+      {label:otherLabel,data:otherVals,dates:otherDates,borderColor:otherColor,backgroundColor:otherColor+"15",borderWidth:2,tension:0.3,pointRadius:3,spanGaps:true,borderDash:[4,4]}
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{
         legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:8}},
         tooltip:{callbacks:{label:tooltipLabelWithDate}},
-        starMarker:{point:d.starIdx,datasetIdx:0,size:9}
+        starMarker:{point:starIdx,datasetIdx:0,size:9}
       },
       scales:{
         y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
@@ -878,22 +961,81 @@ function drawCompareChart(canvasId,d,chartKey){
       }
     }
   });
-}
 
-function drawLastWeekChart(allRows,latest){
-  const d=build7DayCompare(allRows,latest,-7,"이번주","지난주","#e07856","lwkCum");
-  drawCompareChart("cLastWeek",d,"lw");
-}
+  // 누적 스택바: 옆에 [other, this] 두 막대, 각각 홀/배달 적층
+  destroyChart(stackKey);
+  const stackCtx=document.getElementById(stackCanvasId);
+  if(!stackCtx)return;
 
-function drawLastMonthChart(allRows,latest){
-  const d=build7DayCompare(allRows,latest,-28,"이번주","저번달 같은주","#9e6850","lmCum");
-  drawCompareChart("cLastMonth",d,"lm");
-}
+  const stackLabels=[otherLabel,thisLabel];
+  // 누적 합계 (월~기준요일까지)
+  const hallVals=[sumOtherHall,sumThisHall];
+  const delVals=[sumOtherDel,sumThisDel];
+  const totals=[sumOtherTotal,sumThisTotal];
 
-function drawLastYearWeekChart(allRows,latest){
-  const yr=latest.date.getFullYear();
-  const d=build7DayCompare(allRows,latest,-364,yr+"년 이번주",(yr-1)+"년 같은주","#9e8865","lyWkPct");
-  drawCompareChart("cLastYearWeek",d,"lyw");
+  // % 데이터 (각 막대를 100%로 표시할지, 절대값으로 할지) → 절대값으로 두고 라벨로 % 표시
+  chartInstances[stackKey]=new Chart(stackCtx,{
+    type:"bar",
+    data:{
+      labels:stackLabels,
+      datasets:[
+        {label:"홀",data:hallVals,backgroundColor:"#e07856",stack:"a",borderRadius:{topLeft:0,topRight:0,bottomLeft:6,bottomRight:6},borderSkipped:false},
+        {label:"배달",data:delVals,backgroundColor:"#1e4d8c",stack:"a",borderRadius:{topLeft:6,topRight:6,bottomLeft:0,bottomRight:0},borderSkipped:false}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:"top",labels:{font:{family:"Pretendard,sans-serif",size:11},boxWidth:14,padding:8}},
+        title:{display:true,text:`${dowKr}요일까지 누적 (홀/배달)`,font:{family:"Pretendard,sans-serif",size:11,weight:"600"},color:"#666",padding:{bottom:6}},
+        tooltip:{
+          callbacks:{
+            label:c=>{
+              const totalForBar=totals[c.dataIndex]||0;
+              const pct=totalForBar?(c.parsed.y/totalForBar*100).toFixed(1):0;
+              return `${c.dataset.label}: ${fmt(c.parsed.y)} (${pct}%)`;
+            },
+            footer:(items)=>{
+              if(!items.length)return "";
+              const idx=items[0].dataIndex;
+              return `합계: ${fmt(totals[idx])}`;
+            }
+          }
+        },
+        // 데이터 라벨 (% 표시)
+        datalabels:false
+      },
+      scales:{
+        x:{stacked:true,ticks:{font:{family:"Pretendard,sans-serif",size:10}}},
+        y:{stacked:true,beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:9},callback:v=>fmtK(v)}}
+      }
+    },
+    plugins:[{
+      id:'stackPctLabels',
+      afterDatasetsDraw(chart){
+        const ctx=chart.ctx;
+        ctx.save();
+        ctx.font='600 10px Pretendard,sans-serif';
+        ctx.fillStyle='#fff';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        chart.data.datasets.forEach((dataset,dsIdx)=>{
+          const meta=chart.getDatasetMeta(dsIdx);
+          meta.data.forEach((bar,i)=>{
+            const total=totals[i]||0;
+            const val=dataset.data[i]||0;
+            if(!total||!val)return;
+            const pct=val/total*100;
+            if(pct<10)return; // 너무 작으면 안 그림
+            const{x,y,base}=bar;
+            const cy=(y+base)/2;
+            ctx.fillText(`${pct.toFixed(0)}%`,x,cy);
+          });
+        });
+        ctx.restore();
+      }
+    }]
+  });
 }
 
 function drawAccumChart(allRows,baseDay){
@@ -913,20 +1055,22 @@ function drawAccumChart(allRows,baseDay){
     </label>`;
   }).join("");
 
+  // X축: 1/1 ~ 12/31 고정
   const labels=[];
-  const tempDate=new Date(2000,0,1);
-  const endDate=new Date(2000,D.getMonth(),D.getDate());
-  while(tempDate<=endDate){
-    labels.push(`${tempDate.getMonth()+1}/${tempDate.getDate()}`);
-    tempDate.setDate(tempDate.getDate()+1);
+  for(let m=0;m<12;m++){
+    const lastDay=new Date(2001,m+1,0).getDate();
+    for(let d=1;d<=lastDay;d++)labels.push(`${m+1}/${d}`);
   }
 
   function buildSeries(yr){
     let sum=0;const arr=[];
     const start=new Date(yr,0,1);
-    const end=new Date(yr,D.getMonth(),D.getDate());
+    const end=new Date(yr,11,31);
     const d=new Date(start);
+    const today=new Date();today.setHours(0,0,0,0);
     while(d<=end){
+      // 미래 날짜는 null
+      if(d>today){arr.push(null);d.setDate(d.getDate()+1);continue}
       const r=findRow(allRows,d);
       if(r&&r.total>0)sum+=r.total;
       arr.push(sum);
@@ -935,24 +1079,35 @@ function drawAccumChart(allRows,baseDay){
     return arr;
   }
 
+  // 기준일 위치 (1/1부터 며칠째 인덱스)
+  function baseDayIdx(yr){
+    if(yr!==baseYear)return -1;
+    const start=new Date(yr,0,1);
+    return Math.floor((D-start)/86400000);
+  }
+
   function render(){
     const checked=Array.from(document.querySelectorAll("#yearChks input:checked")).map(c=>parseInt(c.dataset.year)).sort((a,b)=>b-a);
     const datasets=checked.map((yr)=>{
       const data=buildSeries(yr);
       while(data.length<labels.length)data.push(null);
-      const isLatest=yr===Math.max(...checked);
+      const isBase=yr===baseYear;
       return{
         label:yr+"년",
         data,
         borderColor:colors[yr],
         backgroundColor:colors[yr]+"15",
-        borderWidth:isLatest?2.5:1.8,
+        borderWidth:isBase?2.5:1.8,
         tension:0.2,
         pointRadius:0,
         fill:false,
-        borderDash:isLatest?[]:[3,3]
+        borderDash:isBase?[]:[3,3]
       };
     });
+
+    // 기준일에 별 표시 (baseYear 데이터셋의 해당 인덱스)
+    const baseDsIdx=checked.indexOf(baseYear);
+    const baseStarIdx=baseDsIdx>=0?baseDayIdx(baseYear):-1;
 
     destroyChart("ac");
     const ctx=document.getElementById("cAccum");
@@ -964,24 +1119,45 @@ function drawAccumChart(allRows,baseDay){
         responsive:true,maintainAspectRatio:false,
         plugins:{
           legend:{display:false},
-          tooltip:{mode:"index",intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y?fmt(c.parsed.y):'-'}`}}
+          tooltip:{mode:"index",intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y?fmt(c.parsed.y):'-'}`}},
+          starMarker:baseDsIdx>=0?{point:baseStarIdx,datasetIdx:baseDsIdx,size:11}:false,
+          zoom:{
+            zoom:{
+              wheel:{enabled:true,speed:0.1},
+              pinch:{enabled:true},
+              drag:{enabled:false},
+              mode:'x'
+            },
+            pan:{enabled:true,mode:'x'},
+            limits:{x:{min:'original',max:'original'}}
+          }
         },
         scales:{
           y:{beginAtZero:true,ticks:{font:{family:"Pretendard,sans-serif",size:10},callback:v=>fmtK(v)}},
           x:{ticks:{font:{family:"Pretendard,sans-serif",size:9},maxTicksLimit:12,autoSkip:true}}
-        }
+        },
+        onDoubleClick:()=>{}
       }
     });
+
+    // 더블클릭 시 줌 리셋
+    ctx.ondblclick=()=>{if(chartInstances.ac&&chartInstances.ac.resetZoom)chartInstances.ac.resetZoom()};
 
     const el=$("acCum");
     if(checked.length>=2){
       const cur=checked[0];
       const prev=checked[1];
-      const curSum=buildSeries(cur).filter(v=>v).pop()||0;
-      const prevSum=buildSeries(prev).filter(v=>v).pop()||0;
+      // 기준일까지의 누적값 비교 (기준일 이후는 null이라 마지막 유효값)
+      const curArr=buildSeries(cur);
+      const prevArr=buildSeries(prev);
+      const curEnd=baseYear===cur?baseDayIdx(cur):curArr.length-1;
+      const prevEnd=Math.min(curEnd,prevArr.length-1);
+      // 기준일 시점 비교 (작년 같은 날짜까지의 누적)
+      const curSum=curArr[curEnd]||0;
+      const prevSum=prevArr[prevEnd]||0;
       const pct=prevSum?((curSum-prevSum)/prevSum)*100:null;
       if(el){
-        if(pct!==null){el.textContent=`${cur} vs ${prev}: ${pctText(pct)}`;el.className=`cumul ${pctClass(pct)}`}
+        if(pct!==null){el.textContent=`${cur}년 vs ${prev}년 (기준일 시점): ${pctText(pct)}`;el.className=`cumul ${pctClass(pct)}`}
         else{el.textContent="-";el.className="cumul"}
       }
     }else if(el){
@@ -1006,7 +1182,7 @@ function drawYearWeekChart(allRows,latest){
   const baseColor=[45,106,79];
   const datasets=years.map((y,i)=>{
     const rev=years.length-1-i;
-    const op=rev===0?1:rev===1?0.55:rev===2?0.3:0.18;
+    const op=rev===0?1:rev===1?0.55:rev===2?0.35:rev===3?0.22:0.15;
     const w=rev===0?2.5:rev===1?2:1.5;
     return{
       label:y+"년",
