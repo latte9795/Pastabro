@@ -19,21 +19,32 @@
 body{font-family:var(--sans);background:var(--warm);color:var(--text);-webkit-font-smoothing:antialiased}
 .wrap{max-width:1100px;margin:0 auto}
 
-.hdr{background:var(--card);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
-.hdr .back{background:none;border:none;font-size:18px;cursor:pointer;padding:4px}
-.hdr h1{font-family:var(--serif);font-size:17px;font-weight:600;flex:1}
-.curM{font-size:13px;font-weight:600}
+/* ── HEADER (선결제장부와 동일) ── */
+.hdr{background:var(--card);padding:16px 18px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.ht{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px}
+.hb{font-family:var(--serif);font-size:20px;font-weight:400;letter-spacing:.02em;white-space:nowrap;flex-shrink:0}
+.hr{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.hn{font-size:11px;color:var(--sub);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:540px){.hn{display:none}}
+.ho{font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:4px 9px;border-radius:999px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
+.curM{font-size:13px;font-weight:600;color:var(--sub)}
+.htCenter{flex:1;text-align:center;font-family:var(--serif);font-size:15px;font-weight:600;color:var(--text)}
 
 .tabBar{display:flex;background:var(--card);border-bottom:1px solid var(--border);padding:0 16px}
 .tBtn{flex:1;max-width:200px;padding:12px 16px;font-size:13px;font-weight:500;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--sans)}
 .tBtn.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
 
-.navWrap{display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--card);border-bottom:1px solid var(--border)}
-.navArr{flex-shrink:0;width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--card);font-size:14px;cursor:pointer;color:var(--sub);font-family:var(--sans);display:flex;align-items:center;justify-content:center}
-.navArr:hover{background:var(--blight);color:var(--text)}
-.mnav{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1;scroll-behavior:smooth}
-.mnav::-webkit-scrollbar{display:none}
-.mchip{padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-size:11px;white-space:nowrap;cursor:pointer;font-family:var(--sans);color:var(--sub);flex-shrink:0}
+/* 연도 탭 (1단계) */
+.yrTabs{display:flex;gap:4px;padding:10px 16px 8px;background:var(--card);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.yrTabs::-webkit-scrollbar{display:none}
+.yrTab{flex-shrink:0;padding:7px 16px;font-size:13px;font-weight:600;color:var(--sub);background:none;border:none;cursor:pointer;font-family:var(--sans);border-radius:999px;white-space:nowrap}
+.yrTab:hover{color:var(--text);background:var(--blight)}
+.yrTab.on{color:#fff;background:var(--accent)}
+
+/* 월 칩 (2단계) */
+.navWrap{display:flex;align-items:center;gap:8px;padding:6px 16px 12px;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.mchip{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-size:11px;white-space:nowrap;cursor:pointer;font-family:var(--sans);color:var(--sub);flex-shrink:0}
+.mchip:hover{background:var(--blight)}
 .mchip.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
 
 .panel{display:none}
@@ -143,9 +154,15 @@ tr.holiday td{color:var(--red)}
 
 <div class="wrap">
 <div class="hdr">
-  <button class="back" onclick="location.href='index.html'">←</button>
-  <h1>매출 보고</h1>
-  <span id="curMonth" class="curM"></span>
+  <div class="ht">
+    <div class="hb">pasta bro</div>
+    <div class="hr">
+      <span class="hn" id="uN"></span>
+      <button class="ho" onclick="location.href='index.html'" title="선결제 장부">📒</button>
+      <button class="ho" id="loBtn">로그아웃</button>
+    </div>
+  </div>
+  <div class="htCenter" id="curMonth">매출 보고</div>
 </div>
 
 <div class="tabBar">
@@ -153,11 +170,8 @@ tr.holiday td{color:var(--red)}
   <button class="tBtn" data-tab="alyt">📈 분석 리포트</button>
 </div>
 
-<div class="navWrap">
-  <button class="navArr" id="nL" title="이전">◁</button>
-  <div class="mnav" id="mNav"></div>
-  <button class="navArr" id="nR" title="다음">▷</button>
-</div>
+<div class="yrTabs" id="yrTabs"></div>
+<div class="navWrap" id="mNav"></div>
 
 <div class="panel show" id="pReport">
   <div id="dbgArea" class="dbg" style="display:none"></div>
@@ -335,10 +349,14 @@ au.onAuthStateChanged(u=>{
     $("content").innerHTML='⚠️ 로그인 정보가 없습니다.<br><br><a href="index.html" style="color:var(--accent);text-decoration:underline">← 메인으로</a>';
     return;
   }
+  $("uN").textContent=u.displayName||u.email||"";
   init();
 });
 
+$("loBtn").addEventListener("click",()=>au.signOut().then(()=>location.href="index.html"));
+
 let allSheets=[],currentSheet=null,sheetCache={},alytLoaded=false;
+let sheetsByYear={},currentYear=null;
 
 async function init(){
   const metaUrl=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?key=${API_KEY}&fields=sheets.properties`;
@@ -348,29 +366,62 @@ async function init(){
   allSheets=meta.sheets.map(s=>s.properties.title).filter(t=>/\d{4}-\d{2}월/.test(t)).sort();
   if(!allSheets.length){$("content").className="err";$("content").textContent="매출보고 시트 탭을 찾을 수 없습니다";return}
 
-  const nav=$("mNav");
+  // 연도별 그룹
+  sheetsByYear={};
   allSheets.forEach(name=>{
     const m=name.match(/(\d{4})-(\d{2})월/);
-    const label=m?`${m[1]}.${parseInt(m[2])}월`:"?";
-    const chip=document.createElement("button");
-    chip.className="mchip";chip.textContent=label;chip.dataset.sheet=name;
-    chip.addEventListener("click",()=>{loadSheet(name);scrollChipIntoView(chip)});
-    nav.appendChild(chip);
+    if(!m)return;
+    const yr=m[1];
+    if(!sheetsByYear[yr])sheetsByYear[yr]=[];
+    sheetsByYear[yr].push(name);
   });
 
-  $("nL").addEventListener("click",()=>nav.scrollBy({left:-200,behavior:"smooth"}));
-  $("nR").addEventListener("click",()=>nav.scrollBy({left:200,behavior:"smooth"}));
+  renderYearTabs();
 
-  loadSheet(allSheets[allSheets.length-1]);
-  setTimeout(()=>nav.scrollLeft=nav.scrollWidth,100);
+  // 가장 최근 시트로 진입
+  const latest=allSheets[allSheets.length-1];
+  const ym=latest.match(/(\d{4})-(\d{2})월/);
+  currentYear=ym[1];
+  renderMonthChips();
+  loadSheet(latest);
 }
 
-function scrollChipIntoView(chip){
-  const nav=$("mNav");
-  const cl=chip.offsetLeft,cw=chip.offsetWidth;
-  const sl=nav.scrollLeft,nw=nav.clientWidth;
-  if(cl<sl)nav.scrollTo({left:cl-10,behavior:"smooth"});
-  else if(cl+cw>sl+nw)nav.scrollTo({left:cl+cw-nw+10,behavior:"smooth"});
+function renderYearTabs(){
+  const yrs=Object.keys(sheetsByYear).sort();
+  const wrap=$("yrTabs");
+  wrap.innerHTML="";
+  yrs.forEach(yr=>{
+    const btn=document.createElement("button");
+    btn.className="yrTab";
+    btn.textContent=yr+"년";
+    btn.dataset.year=yr;
+    btn.addEventListener("click",()=>{
+      currentYear=yr;
+      const months=sheetsByYear[yr];
+      renderMonthChips();
+      loadSheet(months[months.length-1]);
+    });
+    wrap.appendChild(btn);
+  });
+  setTimeout(()=>wrap.scrollLeft=wrap.scrollWidth,50);
+}
+
+function renderMonthChips(){
+  const wrap=$("mNav");
+  wrap.innerHTML="";
+  document.querySelectorAll(".yrTab").forEach(b=>b.classList.toggle("on",b.dataset.year===currentYear));
+  const months=sheetsByYear[currentYear]||[];
+  months.forEach(name=>{
+    const m=name.match(/(\d{4})-(\d{2})월/);
+    const moNum=parseInt(m[2]);
+    const chip=document.createElement("button");
+    chip.className="mchip";
+    chip.textContent=moNum+"월";
+    chip.dataset.sheet=name;
+    if(name===currentSheet)chip.classList.add("on");
+    chip.addEventListener("click",()=>loadSheet(name));
+    wrap.appendChild(chip);
+  });
 }
 
 // 시트 파싱: 4~34행이 데이터, 35행이 총매출 (1-indexed)
@@ -404,9 +455,14 @@ function parseSheet(rows){
 
 async function loadSheet(name){
   currentSheet=name;
+  // 다른 연도의 시트로 점프한 경우 currentYear 동기화 + 월칩 재렌더
+  const sm=name.match(/(\d{4})-(\d{2})월/);
+  if(sm&&sm[1]!==currentYear){
+    currentYear=sm[1];
+    renderMonthChips();
+  }
   document.querySelectorAll(".mchip").forEach(c=>c.classList.toggle("on",c.dataset.sheet===name));
-  const m=name.match(/(\d{4})-(\d{2})월/);
-  $("curMonth").textContent=m?`${m[1]}년 ${parseInt(m[2])}월`:"";
+  $("curMonth").textContent=sm?`매출 보고 · ${sm[1]}년 ${parseInt(sm[2])}월`:"매출 보고";
   $("content").className="loading";$("content").innerHTML="데이터를 불러오는 중...";
   $("sumArea").style.display="none";
   $("dbgArea").style.display="none";
