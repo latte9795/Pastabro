@@ -599,17 +599,65 @@ let analyticsAllRows=[];
 
 async function loadAnalytics(){
   $("alytBody").innerHTML='<div class="alytLoad">분석 데이터를 불러오는 중... (시트 '+allSheets.length+'개)</div>';
-  const ranges=allSheets.map(n=>`ranges=${encodeURIComponent(n)}`).join("&");
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?${ranges}&key=${API_KEY}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`;
-  const res=await fetch(url);
-  if(!res.ok){$("alytBody").innerHTML='<div class="alytErr">데이터 로드 실패: '+res.status+'</div>';return}
-  const data=await res.json();
-  if(!data.valueRanges){$("alytBody").innerHTML='<div class="alytErr">데이터 형식 오류</div>';return}
 
-  data.valueRanges.forEach((vr,idx)=>{
+  // batchGet을 5개씩 나눠서 호출 (URL 길이 제한 회피)
+  const CHUNK=5;
+  const allValueRanges=[];
+  const failedSheets=[];
+
+  for(let i=0;i<allSheets.length;i+=CHUNK){
+    const chunk=allSheets.slice(i,i+CHUNK);
+    const ranges=chunk.map(n=>`ranges=${encodeURIComponent(n)}`).join("&");
+    const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?${ranges}&key=${API_KEY}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`;
+    const res=await fetch(url);
+    if(!res.ok){
+      console.error("[Sales] batchGet failed for chunk:",chunk,"status:",res.status);
+      chunk.forEach(s=>failedSheets.push(s));
+      // 실패한 chunk만큼 빈 응답 push (인덱스 맞추기)
+      chunk.forEach(()=>allValueRanges.push({values:[]}));
+      continue;
+    }
+    const data=await res.json();
+    if(data.valueRanges){
+      data.valueRanges.forEach(vr=>allValueRanges.push(vr));
+    }else{
+      chunk.forEach(()=>allValueRanges.push({values:[]}));
+    }
+  }
+
+  console.log("[Sales] Total sheets:",allSheets.length,"Loaded:",allValueRanges.length);
+  console.log("[Sales] Sheet titles:",allSheets);
+  if(failedSheets.length)console.warn("[Sales] Failed sheets:",failedSheets);
+
+  // 빈 시트는 개별로 한번 더 시도
+  for(let i=0;i<allValueRanges.length;i++){
+    const vr=allValueRanges[i];
+    const name=allSheets[i];
+    const rowCount=(vr&&vr.values)?vr.values.length:0;
+    if(rowCount<3){
+      console.warn(`[Sales] Sheet "${name}" empty in batch (rows=${rowCount}). Retrying individually...`);
+      const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(name)}?key=${API_KEY}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`;
+      const r2=await fetch(url);
+      if(r2.ok){
+        const d2=await r2.json();
+        const rc=(d2.values||[]).length;
+        console.log(`[Sales] Retry "${name}": ${rc} rows`);
+        if(rc>=3)allValueRanges[i]={values:d2.values};
+      }else{
+        console.error(`[Sales] Retry "${name}" failed: ${r2.status}`);
+      }
+    }
+  }
+
+  // 최종 처리
+  let totalParsedRows=0;
+  allValueRanges.forEach((vr,idx)=>{
     const name=allSheets[idx];
     const rows=vr.values||[];
-    if(rows.length<2)return;
+    if(rows.length<2){
+      console.warn(`[Sales] Skipping "${name}" - too few rows (${rows.length})`);
+      return;
+    }
     const parsed=parseSheet(rows);
     const ci=getColIdx(parsed.headers);
     const parsedRows=parsed.dataRows.map(r=>{
@@ -635,10 +683,15 @@ async function loadAnalytics(){
       const delivery=calcDeliverySum(r,parsed.catRanges,parsed.headers);
       return{date:dt,dow:r[1]||"",total,hall,delivery,raw:r};
     }).filter(r=>r.date&&!isNaN(r.date));
+    console.log(`[Sales] "${name}": ${parsedRows.length} rows parsed (catRanges: ${JSON.stringify(parsed.catRanges)})`);
+    totalParsedRows+=parsedRows.length;
     allMonthData[name]={headers:parsed.headers,catRanges:parsed.catRanges,parsedRows,colIdx:ci};
   });
 
+  console.log(`[Sales] Total parsed rows across all sheets: ${totalParsedRows}`);
+
   analyticsAllRows=Object.values(allMonthData).flatMap(m=>m.parsedRows).filter(r=>r.total>0);
+  console.log(`[Sales] Rows with total>0: ${analyticsAllRows.length}`);
   alytLoaded=true;
   renderAnalytics();
 }
